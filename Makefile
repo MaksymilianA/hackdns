@@ -1,5 +1,5 @@
 CC=clang
 
 build:
-	$(CC) -o bin/hackdns main.c -fstack-protector-all -lresolv -lpthread
+	$(CC) -o hackdns main.c -fstack-protector-all -lresolv -lpthread
 

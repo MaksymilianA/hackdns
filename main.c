@@ -1,5 +1,6 @@
 /*
-hackDNS 0.1 BETA - DNS brute force
+
+hackDNS 0.1 - DNS brute force
 
 Copyright (C) 2018, Maksymilian Arciemowicz
 
@@ -97,8 +98,6 @@ int checkDomain3(char *host)
    }
    else
    {
-             res_pquery(&_res, nsbuf, l, stdout);
-
              ns_initparse(nsbuf, l, &msg);
              l = ns_msg_count(msg, ns_s_an);
              for (i = 0; i < l; i++)
@@ -215,7 +214,7 @@ int main( int argc , char *argv[])
    }
     
    if(!*dictionary){
-       snprintf(dictionary,BUFFSIZE_HOST,"./dictionary/common.txt",optarg);
+       snprintf(dictionary,BUFFSIZE_HOST,"./dictionary/common.txt");
    }
     
    FILE *fline = fopen(dictionary,"r");
