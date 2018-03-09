@@ -143,7 +143,6 @@ void *thread(void *arg) {
               checkDomain3(newhostname);
           }
       }
-//      ch = getc ( fp );
    }
    pthread_exit(ret);
 }
@@ -156,7 +155,7 @@ void help(char *prog)
    printf(" -n file - Path to resolv file where are DNS servers\n");
    printf(" -t int  - Number of threats. (Default 1)\n");
    printf(" -a      - Only find subdomains \n\n");
-   printf(" example: %s -d domain.com -f dictionaries/common.txt -n servers/yandex.conf -t 4\n\n",prog);
+   printf(" example: %s -f dictionaries/common.txt -n servers/yandex.conf -d domain.com -t 4\n\n",prog);
 }
 
 int main( int argc , char *argv[])
@@ -172,7 +171,7 @@ int main( int argc , char *argv[])
   memset(dictionary,'\0',BUFFSIZE_HOST);
   memset(nsfile,'\0',BUFFSIZE_HOST);
 
-  printf("\n==========================================\n fuckDNS 0.1 - Fast DNS recon for hackers \n==========================================\n\n");
+  printf("\n==========================================\n hackDNS 0.1 - Fast DNS recon for hackers \n==========================================\n\n");
 
   while((opt = getopt(argc, argv, "d:n:f:t:ah")) != -1) {
       switch(opt){
