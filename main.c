@@ -47,12 +47,28 @@ static int podzielone;
 static int atype=0;
 
 
-int checkDomain3(char *host)
+
+int takeOverCname(char *host)
 {
-  if(atype){ 
+  u_char nsbuf[N];
+  int i, l, o;
+  l = res_search(host, ns_c_in, ns_t_cname, nsbuf, sizeof(nsbuf));
+
+  if (l >= 0) {
+      o = res_query(host, ns_c_in, ns_t_a, nsbuf, sizeof(nsbuf));
+      if (o < 0) {
+        printf(" Possible to take over CNAME record %s\n", host);        
+      }
+  }
+  return 0;  
+}
+
+int checkArecord(char *host)
+{
+  if(atype==1){ 
     struct hostent *lh = gethostbyname(host);
     if (lh){
-         printf("%s\n", host);
+      //   printf("%s\n", host);
     }
     return 0;
   }
@@ -61,23 +77,53 @@ int checkDomain3(char *host)
   ns_msg msg;
   ns_rr rr;
   int i, l;
-    
+ 
   // A RECORD
   l = res_query(host, ns_c_in, ns_t_a, nsbuf, sizeof(nsbuf));
+        
   if (l >= 0) {
-      
-      ns_initparse(nsbuf, l, &msg);
-      l = ns_msg_count(msg, ns_s_an);
+            ns_initparse(nsbuf, l, &msg);
+            l = ns_msg_count(msg, ns_s_an);
+            if(0<l) {
+              ns_parserr(&msg, ns_s_an, 0, &rr);
+              ns_sprintrr(&msg, &rr, NULL, NULL, dispbuf, sizeof(dispbuf));
+              printf ("\t%s\n", dispbuf);
+            }
+  }
+  return 0;
+}
 
-      for (i = 0; i < l; i++) {
-            ns_parserr(&msg, ns_s_an, i, &rr);
-            ns_sprintrr(&msg, &rr, NULL, NULL, dispbuf, sizeof(dispbuf));
-            printf("\t%s \n", dispbuf);
-      }
+int generalCheck(char *host)
+{
+  if(atype==1){ 
+    struct hostent *lh = gethostbyname(host);
+    if (lh){
+      //   printf("%s\n", host);
+    }
+    return 0;
+  }
+  u_char nsbuf[N];
+  char dispbuf[N];
+  ns_msg msg;
+  ns_rr rr;
+  int i, l, o;
+ 
+  // A RECORD
+  l = res_query(host, ns_c_in, ns_t_a, nsbuf, sizeof(nsbuf));
+        
+  if (l >= 0) {
+            ns_initparse(nsbuf, l, &msg);
+            l = ns_msg_count(msg, ns_s_an);
+            for (i = 0; i < l; i++)
+            {
+              ns_parserr(&msg, ns_s_an, i, &rr);
+              ns_sprintrr(&msg, &rr, NULL, NULL, dispbuf, sizeof(dispbuf));
+              printf ("\t%s\n", dispbuf);
+            }
   }
 
   // CNAME
-  l = res_query(host, ns_c_in, ns_t_ns, nsbuf, sizeof(nsbuf));
+  l = res_query(host, ns_c_in, ns_t_cname, nsbuf, sizeof(nsbuf));
   if (l >= 0) {
       ns_initparse(nsbuf, l, &msg);
       l = ns_msg_count(msg, ns_s_an);
@@ -140,7 +186,9 @@ void *thread(void *arg) {
 
           if((skip++)>(int)arg){
               snprintf(newhostname, BUFFSIZE_HOST, "%s.%s", line, hostname);
-              checkDomain3(newhostname);
+              if(atype==1) checkArecord(newhostname);
+              else if(atype==2) takeOverCname(newhostname);
+              else generalCheck(newhostname);
           }
       }
    }
@@ -155,6 +203,7 @@ void help(char *prog)
    printf(" -n file - Path to resolv file where are DNS servers\n");
    printf(" -t int  - Number of threats. (Default 1)\n");
    printf(" -a      - Only find subdomains \n\n");
+   printf(" -c      - Search CNAME to takeover \n\n");
    printf(" example: %s -f dictionaries/common.txt -n servers/yandex.conf -d domain.com -t 4\n\n",prog);
 }
 
@@ -173,7 +222,7 @@ int main( int argc , char *argv[])
 
   printf("\n==========================================\n hackDNS 0.1 - Fast DNS recon for hackers \n==========================================\n\n");
 
-  while((opt = getopt(argc, argv, "d:n:f:t:ah")) != -1) {
+  while((opt = getopt(argc, argv, "d:n:f:t:ach")) != -1) {
       switch(opt){
       case 'd' :
           snprintf(hostname,BUFFSIZE_HOST,"%s",optarg);
@@ -189,6 +238,9 @@ int main( int argc , char *argv[])
           break;
       case 'a' :
           atype=1;
+          break;
+      case 'c' :
+          atype=2;
           break;
       case 'h' :
           help(argv[0]);
