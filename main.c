@@ -301,7 +301,7 @@ int niskiPoziom3(int idxServDns)
 
             if (nfds == -1)
             {
-                printf("[resolv] select() failed\n");
+                //printf("[resolv] select() failed\n");
                 if (fd != -1)
                     close(fd);
                 selectedDns++;
