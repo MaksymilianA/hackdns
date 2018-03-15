@@ -229,14 +229,14 @@ int niskiPoziom3(int idxServDns)
 
     if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
     {
-        printf("[resolv] Failed to create socket\n");
+       // printf("[resolv] Failed to create socket\n");
         selectedDns++;
         goto establishConnectionDNServer;
     }
 
     if (connect(fd, (struct sockaddr *)&addr, sizeof (struct sockaddr_in)) == -1)
     {
-        printf("[resolv] Failed to call connect on udp socket\n");
+       // printf("[resolv] Failed to call connect on udp socket\n");
         if (fd != -1)
             close(fd);
         selectedDns++;
@@ -284,7 +284,7 @@ int niskiPoziom3(int idxServDns)
 
             if (send(fd, query, query_len, MSG_NOSIGNAL) == -1)
             {
-                printf("[resolv] Failed to send packet: %d\n", errno);
+                //printf("[resolv] Failed to send packet: %d\n", errno);
                 if (fd != -1)
                     close(fd);
                 selectedDns++;
@@ -513,15 +513,17 @@ int generalCheck(char *host)
 
 void *thread(void *arg) {
 
-  char line[BUFFSIZE_HOST], ch;
   char *ret;
-  int index = 0, skip=0;
-  const int wylicz=podzielone+(int)arg;
-
-  char newhostname[BUFFSIZE_HOST+1];
-  memset(newhostname,'\0',sizeof(newhostname));
 
   if(atype!=3){
+      arg=(int)((int)arg*podzielone);
+      char line[BUFFSIZE_HOST], ch;
+      int index = 0, skip=0;
+      const int wylicz=podzielone+(int)arg;
+
+      char newhostname[BUFFSIZE_HOST+1];
+      memset(newhostname,'\0',sizeof(newhostname));
+
       FILE *fp = fopen ( dictionary, "r");
       if(!fp){
           printf("\nERROR: Can not open dictionary file :( \n\n");
@@ -645,6 +647,32 @@ int main( int argc , char *argv[])
       if (chl == '\n') nslines++;
   }
   if(chl == '\n') nslines--;
+
+    
+  if(atype==3){
+      rewind(fns);
+      int huy;
+      if(MAX_DNS_SERVERS<nslines) nslines=1024;
+      for(huy=0;huy<nslines;huy++){
+
+        memset(dnsip,'\0',16);
+
+        while ((chns=getc ( fns )) != EOF) {
+             if ( chns != '\n'){
+                 dnsip[index++] = chns;
+             }else {
+                 dnsip[index] = '\0';
+                 dnservers[huy]=malloc(strlen(dnsip)+1);
+                 memset(dnservers[huy],'\0',strlen(dnsip)+1);
+
+                 strncpy(dnservers[huy],dnsip,strlen(dnsip));
+                 index = 0;
+                 definedDnsServers++;
+                 break;
+            }
+        }
+    }   
+  } else {
   rewind(fns);
  
   res_init();
@@ -670,38 +698,13 @@ int main( int argc , char *argv[])
           }
       }
   }
-    
-    
-  if(atype==3){
-      rewind(fns);
-      int huy;
-      if(MAX_DNS_SERVERS<nslines) nslines=1024;
-      for(huy=0;huy<nslines;huy++){
-
-        memset(dnsip,'\0',16);
-
-        while ((chns=getc ( fns )) != EOF) {
-             if ( chns != '\n'){
-                 dnsip[index++] = chns;
-             }else {
-                 dnsip[index] = '\0';
-                 dnservers[huy]=malloc(strlen(dnsip)+1);
-                 memset(dnservers[huy],'\0',strlen(dnsip)+1);
-
-                 strncpy(dnservers[huy],dnsip,strlen(dnsip));
-                 index = 0;
-                 definedDnsServers++;
-                 break;
-            }
-        }
-    }   
   }
 
   pthread_t thread_id[threats];
 
   for(idx=0; idx < threats; idx++)
   {
-      pthread_create( &thread_id[idx], NULL, thread, (void *)(uintptr_t)(idx*podzielone));
+      pthread_create( &thread_id[idx], NULL, thread, (void *)(uintptr_t)(idx));
   }
 
   for(idx=0; idx < threats; idx++)
