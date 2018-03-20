@@ -56,10 +56,6 @@ static int atype=0;
 
 static char *dnservers[MAX_DNS_SERVERS];
 
-
-
-
-
 int util_strlen(char *str)
 {
     int c = 0;
@@ -195,7 +191,8 @@ int niskiPoziom3(int idxServDns)
     }
 
     struct resolv_entries *entries;
-    char query[2048], response[2048];
+    char query[2048];
+    uint8_t response[2048];
     struct dnshdr *dnsh;
     char *qname;
     struct sockaddr_in addr = {0};
@@ -207,9 +204,7 @@ int niskiPoziom3(int idxServDns)
     struct timeval timeo;
     int nfds;
 
-
     fd_set fdset;
-
 
     char failed=0;
     int selectedDnsTmp;
@@ -221,7 +216,8 @@ int niskiPoziom3(int idxServDns)
 
     util_zero(&addr, sizeof (struct sockaddr_in));
     addr.sin_family = AF_INET;
-    inet_aton(dnservers[selectedDns], &addr.sin_addr.s_addr);
+//    inet_aton(dnservers[selectedDns], &addr.sin_addr.s_addr);
+    inet_aton(dnservers[selectedDns], &addr.sin_addr);
     addr.sin_port = htons(53);
 
     if (fd != -1)
@@ -319,7 +315,8 @@ int niskiPoziom3(int idxServDns)
             {
 
                 int ret = recvfrom(fd, response, sizeof (response), MSG_NOSIGNAL, NULL, NULL);
-                char *name;
+                unsigned char *name;
+//                uint8_t *name;
                 struct dnsans *dnsa;
                 uint16_t ancount;
                 int stop;
@@ -334,8 +331,9 @@ int niskiPoziom3(int idxServDns)
                 dnsh = (struct dnshdr *)response;
                 qname = (char *)(dnsh + 1);
                 dnst = (struct dns_question *)(qname + util_strlen(qname) + 1);
-                name = (char *)(dnst + 1);
-
+                name = (unsigned char *)(dnst + 1);
+//                name = (uint8_t)(qname + util_strlen(qname) + 1);
+                
                 if (dnsh->id != dns_id)
                 {
 //                    printf("[resolv] id!=dns_id\n"); //abort();
@@ -514,12 +512,12 @@ int generalCheck(char *host)
 void *thread(void *arg) {
 
   char *ret;
+  int argi;
 
   if(atype!=3){
-      arg=(int)((int)arg*podzielone);
       char line[BUFFSIZE_HOST], ch;
       int index = 0, skip=0;
-      const int wylicz=podzielone+(int)arg;
+      const int wylicz=podzielone+(int)((int)arg*podzielone);
 
       char newhostname[BUFFSIZE_HOST+1];
       memset(newhostname,'\0',sizeof(newhostname));
@@ -562,7 +560,7 @@ void help(char *prog)
    printf(" -a      - Only find subdomains \n\n");
    printf(" -c      - Search CNAME to takeover \n\n");
    printf(" -x      - Search A,CNAME and bypass local resolver (direct DNS calls) \n\n");
-   printf(" example: %s -f dictionaries/common.txt -n servers/yandex.conf -d domain.com -t 4\n\n",prog);
+   printf(" example: %s -f dictionaries/common.txt -n servers/yandex.conf -d domain.com -t 4\n\n\n\n",prog);
 }
 
 int main( int argc , char *argv[])
@@ -641,13 +639,15 @@ int main( int argc , char *argv[])
       return -1;
   }
  
-  nslines++;
+  index=0;
   while ((chl = fgetc(fns)) != EOF)
   {
-      if (chl == '\n') nslines++;
+      if (chl == '\n'){ if(index>0) nslines++; index=0; continue; };
+      index++;
   }
-  if(chl == '\n') nslines--;
+  index=0;
 
+  printf("nslines %i", nslines);
     
   if(atype==3){
       rewind(fns);
@@ -673,38 +673,42 @@ int main( int argc , char *argv[])
         }
     }   
   } else {
-  rewind(fns);
- 
-  res_init();
+      rewind(fns);
 
-   if(MAXNS<nslines){
-       nslines=MAXNS;
-   }
-  _res.nscount = nslines;
+      res_init();
 
-  for(huy=0;huy<nslines;huy++){
-      memset(dnsip,'\0',16);
-     
-      while ((chns=getc ( fns )) != EOF) {
-           if ( chns != '\n'){
-               dnsip[index++] = chns;
-           }else {
-               dnsip[index] = '\0';
-               index = 0;
-               _res.nsaddr_list[huy].sin_family = AF_INET;
-               _res.nsaddr_list[huy].sin_addr.s_addr = inet_addr(dnsip);
-               _res.nsaddr_list[huy].sin_port = htons(53);
-               break;
+      if(MAXNS<nslines){
+         nslines=MAXNS;
+      }
+      _res.nscount = nslines;
+
+      for(huy=0;huy<nslines;huy++){
+          memset(dnsip,'\0',16);
+
+          while ((chns=getc ( fns )) != EOF) {
+               if ( chns != '\n'){
+                   dnsip[index++] = chns;
+               }else {
+                   dnsip[index] = '\0';
+                   index = 0;
+                   _res.nsaddr_list[huy].sin_family = AF_INET;
+                   _res.nsaddr_list[huy].sin_addr.s_addr = inet_addr(dnsip);
+                   _res.nsaddr_list[huy].sin_port = htons(53);
+                   break;
+              }
           }
       }
-  }
   }
 
   pthread_t thread_id[threats];
 
   for(idx=0; idx < threats; idx++)
   {
-      pthread_create( &thread_id[idx], NULL, thread, (void *)(uintptr_t)(idx));
+      if(pthread_create( &thread_id[idx], NULL, thread, (void *)(uintptr_t)(idx))!=0){
+          printf("ERROR: Can't create thread %i. Scan will be incomplete. Use lower value or try optimize your OS\n", idx);
+          threats=idx;  
+          break;
+      };
   }
 
   for(idx=0; idx < threats; idx++)
