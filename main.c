@@ -43,8 +43,11 @@ DEALINGS IN THE SOFTWARE.
 
 #define N 4096
 #define BUFFSIZE_HOST 1024
-#define MSG_NOSIGNAL 0x0
 #define MAX_DNS_SERVERS 1024
+
+#if !defined(MSG_NOSIGNAL)
+#define MSG_NOSIGNAL 0x0
+#endif
 
 static int definedDnsServers=0;
 static int threats=1;
@@ -243,7 +246,7 @@ int niskiPoziom3(int idxServDns)
     if(strlen(line)>0) goto lecisziom;
     index=0;
 
-    while ( failed==1 | (ch = getc ( fp )) != EOF ) {
+    while ( failed==1 | (ch = (getc ( fp )) != EOF ) {
 
         if(wylicz<skip) return 0;
         if ( failed==0 & ch != '\n' && index<(BUFFSIZE_HOST-1)){
@@ -646,8 +649,6 @@ int main( int argc , char *argv[])
       index++;
   }
   index=0;
-
-  printf("nslines %i", nslines);
     
   if(atype==3){
       rewind(fns);
