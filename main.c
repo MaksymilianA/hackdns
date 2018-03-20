@@ -703,10 +703,11 @@ int main( int argc , char *argv[])
 
   pthread_t thread_id[threats];
 
+  int errorcode=0;
   for(idx=0; idx < threats; idx++)
   {
-      if(pthread_create( &thread_id[idx], NULL, thread, (void *)(uintptr_t)(idx))!=0){
-          printf("ERROR: Can't create thread %i. Scan will be incomplete. Use lower value or try optimize your OS\n", idx);
+      if((errorcode=pthread_create( &thread_id[idx], NULL, thread, (void *)(uintptr_t)(idx)))!=0){
+          printf("ERROR: Can't create thread %i. Scan will be incomplete. Use lower value or try optimize your OS. Error code: %i\n", idx, errorcode);
           threats=idx;  
           break;
       };
