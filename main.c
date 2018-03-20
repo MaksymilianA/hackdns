@@ -531,7 +531,7 @@ void *thread(void *arg) {
           pthread_exit(ret);
       }
 
-      while ( (ch = getc ( fp )) != EOF ) {
+      while ( (int)(ch = getc ( fp )) != EOF ) {
           if(wylicz<skip) return 0;
           if ( ch != '\n' && index<(BUFFSIZE_HOST-1)){
               line[index++] = ch;
@@ -563,7 +563,7 @@ void help(char *prog)
    printf(" -a      - Only find subdomains \n\n");
    printf(" -c      - Search CNAME to takeover \n\n");
    printf(" -x      - Search A,CNAME and bypass local resolver (direct DNS calls) \n\n");
-   printf(" example: %s -f dictionaries/common.txt -n servers/yandex.conf -d domain.com -t 4\n\n\n\n",prog);
+   printf(" example: %s -f dictionaries/common.txt -n servers/yandex.conf -d domain.com -t 4\n\n",prog);
 }
 
 int main( int argc , char *argv[])
@@ -613,7 +613,7 @@ int main( int argc , char *argv[])
 
   if(!*hostname){
       help(argv[0]);
-      printf("ERROR: Hostname not defined.");
+      printf("ERROR: Hostname not defined.\n\n");
       return -1;
   }
   
@@ -628,7 +628,7 @@ int main( int argc , char *argv[])
   }
 
   lines++;
-  while ((chl = fgetc(fline)) != EOF)
+  while ((int)(chl = fgetc(fline)) != EOF)
   {
       if (chl == '\n') lines++;
   }
@@ -658,7 +658,7 @@ int main( int argc , char *argv[])
 
         memset(dnsip,'\0',16);
 
-        while ((chns=getc ( fns )) != EOF) {
+        while ((int)(chns=getc ( fns )) != EOF) {
              if ( chns != '\n'){
                  dnsip[index++] = chns;
              }else {
