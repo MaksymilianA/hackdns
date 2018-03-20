@@ -686,7 +686,7 @@ int main( int argc , char *argv[])
       for(huy=0;huy<nslines;huy++){
           memset(dnsip,'\0',16);
 
-          while ((chns=getc ( fns )) != EOF) {
+          while ((int)(chns=getc ( fns )) != EOF) {
                if ( chns != '\n'){
                    dnsip[index++] = chns;
                }else {
