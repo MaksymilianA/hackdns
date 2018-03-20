@@ -246,7 +246,7 @@ int niskiPoziom3(int idxServDns)
     if(strlen(line)>0) goto lecisziom;
     index=0;
 
-    while ( failed==1 | (ch = getc ( fp )) != EOF ) {
+    while ( failed==1 | (int)(ch = getc ( fp )) != EOF ) {
 
         if(wylicz<skip) return 0;
         if ( failed==0 & ch != '\n' && index<(BUFFSIZE_HOST-1)){
