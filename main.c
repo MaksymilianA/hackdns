@@ -61,6 +61,7 @@ static char *dnservers[MAX_DNS_SERVERS];
 
 int util_strlen(char *str)
 {
+    if(str==NULL) return 0;
     int c = 0;
 
     while (*str++ != 0)
@@ -181,7 +182,7 @@ int niskiPoziom3(int idxServDns)
     int index = 0, skip=0;
     int thNum=idxServDns;
 
-    int lowOffset=(int)idxServDns*podzielone;
+    const int lowOffset=(int)idxServDns*podzielone;
     const int wylicz=podzielone+(int)lowOffset;
 
     char newhostname[BUFFSIZE_HOST+1];
@@ -228,7 +229,7 @@ int niskiPoziom3(int idxServDns)
 
     if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
     {
-       // printf("[resolv] Failed to create socket\n");
+      //  printf("[resolv] Failed to create socket\n");
         selectedDns++;
         goto establishConnectionDNServer;
     }
@@ -300,7 +301,7 @@ int niskiPoziom3(int idxServDns)
 
             if (nfds == -1)
             {
-                //printf("[resolv] select() failed\n");
+            //    printf("[resolv] select() failed\n");
                 if (fd != -1)
                     close(fd);
                 selectedDns++;
@@ -308,7 +309,7 @@ int niskiPoziom3(int idxServDns)
             }
             else if (nfds == 0)
             {
-               // printf("[resolv] Couldn't resolve %s in time. %d tr%s\n", newhostname, tries, tries == 1 ? "y" : "ies");
+          //      printf("[resolv] Couldn't resolve %s in time. %d tr%s\n", newhostname, tries, tries == 1 ? "y" : "ies");
                 if (fd != -1)
                     close(fd);
                 selectedDns++;
@@ -339,7 +340,7 @@ int niskiPoziom3(int idxServDns)
                 
                 if (dnsh->id != dns_id)
                 {
-//                    printf("[resolv] id!=dns_id\n"); //abort();
+            //        printf("[resolv] id!=dns_id\n"); //abort();
                     if (fd != -1)
                         close(fd);
                     selectedDns++;
@@ -420,7 +421,7 @@ int checkArecord(char *host)
   if(atype==1){ 
     struct hostent *lh = gethostbyname(host);
     if (lh){
-      //   printf("%s\n", host);
+         printf("%s\n", host);
     }
     return 0;
   }
@@ -520,7 +521,9 @@ void *thread(void *arg) {
   if(atype!=3){
       char line[BUFFSIZE_HOST], ch;
       int index = 0, skip=0;
-      const int wylicz=podzielone+(int)((int)arg*podzielone);
+      const int wylicz=(int)((int)arg*podzielone);
+      const int wyliczUp=(int)(((int)arg*podzielone)+podzielone);
+        printf("HIP %i %i %ii\n",arg,wylicz,wyliczUp);
 
       char newhostname[BUFFSIZE_HOST+1];
       memset(newhostname,'\0',sizeof(newhostname));
@@ -532,14 +535,14 @@ void *thread(void *arg) {
       }
 
       while ( (int)(ch = getc ( fp )) != EOF ) {
-          if(wylicz<skip) return 0;
+          if(wyliczUp<skip) return 0;
           if ( ch != '\n' && index<(BUFFSIZE_HOST-1)){
               line[index++] = ch;
           }else {
               line[index] = '\0';
               index = 0;
 
-              if((skip++)>(int)arg){
+              if((skip++)>wylicz){
                   snprintf(newhostname, BUFFSIZE_HOST, "%s.%s", line, hostname);
                   if(atype==1) checkArecord(newhostname);
                   else if(atype==2) takeOverCname(newhostname);

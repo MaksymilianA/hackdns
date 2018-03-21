@@ -19,6 +19,8 @@ if [ -n "$DOCKER_PS" ]; then
     exit;
 fi
 
-docker build -t hackdns .
+docker build -t hackdns ..
 
 docker run --name hackdns -d -it hackdns
+
+sh ./bash.sh
