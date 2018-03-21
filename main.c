@@ -523,8 +523,7 @@ void *thread(void *arg) {
       int index = 0, skip=0;
       const int wylicz=(int)((int)arg*podzielone);
       const int wyliczUp=(int)(((int)arg*podzielone)+podzielone);
-        printf("HIP %i %i %ii\n",arg,wylicz,wyliczUp);
-
+      
       char newhostname[BUFFSIZE_HOST+1];
       memset(newhostname,'\0',sizeof(newhostname));
 
