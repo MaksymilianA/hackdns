@@ -20,5 +20,6 @@ ADD servers/us.conf /hackdns/servers/us.conf
 ADD servers/top10.conf /hackdns/servers/top10.conf
 RUN cd /hackdns/ && make
 RUN ln -s /hackdns/hackdns /bin/hackdns
+RUN  debuginfo-install glibc-2.17-196.el7_4.2.x86_64 libgcc-4.8.5-16.el7_4.2.x86_64 -y
 
 ENTRYPOINT ["bash"]

@@ -21,6 +21,6 @@ fi
 
 docker build -t hackdns ..
 
-docker run --name hackdns -d -it hackdns
+docker run --name hackdns --security-opt seccomp=unconfined -d -it hackdns
 
 sh ./bash.sh
