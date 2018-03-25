@@ -1,10 +1,11 @@
 FROM centos:latest
 
-RUN yum install -y bash gcc clang gdb valgrind make lldb
+RUN yum install -y bash gcc clang gdb valgrind make lldb libstdc++-static
 
 RUN mkdir /hackdns/
 RUN mkdir /hackdns/servers/
 RUN mkdir /hackdns/dictionaries/
+RUN mkdir /hackdns/results/
 ADD main.c /hackdns/main.c
 ADD Makefile /hackdns/Makefile
 ADD dictionaries/common.txt /hackdns/dictionaries/common.txt
