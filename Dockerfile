@@ -9,6 +9,8 @@ RUN mkdir /hackdns/results/
 ADD main.c /hackdns/main.c
 ADD Makefile /hackdns/Makefile
 ADD dictionaries/common.txt /hackdns/dictionaries/common.txt
+ADD dictionaries/common-big.txt /hackdns/dictionaries/common-big.txt
+ADD dictionaries/small.txt /hackdns/dictionaries/small.txt
 ADD dictionaries/fourchars.txt /hackdns/dictionaries/fourchars.txt
 ADD servers/google.conf /hackdns/servers/google.conf
 ADD servers/yandex.conf /hackdns/servers/yandex.conf
