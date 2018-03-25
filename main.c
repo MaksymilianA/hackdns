@@ -61,13 +61,12 @@ using namespace std;
 static char hostname[BUFFSIZE_HOST+1];
 static char nsfile[BUFFSIZE_HOST+1];
 static char dictionary[BUFFSIZE_HOST+1];
-static char resultFile[FILENAME_SIZE_RESULT];
 static unsigned int definedDnsServers=0;
 static unsigned int threats=1;
 static unsigned int podzielone;
 static unsigned int atype=0;
 static unsigned int debugMode=0;
-
+static string resultFile;
 
 static char *dnservers[MAX_DNS_SERVERS];
 
@@ -409,9 +408,9 @@ int niskiPoziom3(void *idxServDns)
      index=0;
     }}
 
-   if(resultFile[0]!=0){
+   if(resultFile.length()!=0){
         FILE *f;
-        f = fopen(resultFile, "a");
+        f = fopen(resultFile.c_str(), "a");
         if (f == NULL)
         {
               printf("ERROR: Error opening file to output!\n");
@@ -444,9 +443,9 @@ int takeOverCname(char *host)
      }
  }
 
- if(resultFile[0]!=0){
+ if(resultFile.length()!=0){
         FILE *f;
-        f = fopen(resultFile, "a");
+        f = fopen(resultFile.c_str(), "a");
         if (f == NULL)
         {
               printf("ERROR: Error opening file to output!\n");
@@ -490,11 +489,11 @@ int checkArecord(char *host)
  }
 
  FILE *f;
- f = fopen(resultFile, "a");
+ f = fopen(resultFile.c_str(), "a");
 
  if (f == NULL)
  {
-       printf("ERROR: Error opening file to output!\n");
+       printf("x ERROR: Error opening file to output! %s\n",resultFile.c_str());
        exit(1);
  }
  fprintf(f, "%s",dowyjscia.c_str());
@@ -575,9 +574,9 @@ int generalCheck(char *host)
            dowyjscia = outTmp;
      }
  }
- if(resultFile[0]!=0){
+ if(resultFile.length()!=0){
      FILE *f;
-     f = fopen(resultFile, "a");
+     f = fopen(resultFile.c_str(), "a");
      if (f == NULL)
      {
          printf("ERROR: Error opening file to output!\n");
@@ -653,7 +652,7 @@ int main( int argc , char *argv[])
 {
  int opt, idx;
  int chl=0, lines=0, nslines=0;
- int huy=0, index=0;
+ int huy=0, index=0, outputsave=0;
 
  char chns;
  char dnsip[16];
@@ -661,7 +660,6 @@ int main( int argc , char *argv[])
  memset(hostname,'\0',BUFFSIZE_HOST);
  memset(dictionary,'\0',BUFFSIZE_HOST);
  memset(nsfile,'\0',BUFFSIZE_HOST);
- memset(resultFile,'\0',FILENAME_SIZE_RESULT);
 
  printf("\n==========================================\n hackDNS 0.1 - Fast DNS recon for hackers \n==========================================\n\n");
 
@@ -677,7 +675,8 @@ int main( int argc , char *argv[])
          snprintf(dictionary,BUFFSIZE_HOST,"%s",optarg);
          break;
      case 'o' :
-         snprintf(resultFile,FILENAME_SIZE_RESULT,"%s/%s.%d.txt",optarg,hostname,(int)time(NULL));
+         outputsave=1;
+         resultFile = optarg;
          break;
      case 't' :
          threats=atoi(optarg);
@@ -707,6 +706,12 @@ int main( int argc , char *argv[])
      return -1;
  }
 
+ if(outputsave==1){
+    resultFile += hostname;
+    resultFile += ".";
+    resultFile += to_string((int)time(NULL));
+    resultFile += ".txt";
+ }
  if(!*dictionary){
      snprintf(dictionary,BUFFSIZE_HOST,"./dictionary/common.txt");
  }
@@ -809,9 +814,9 @@ int main( int argc , char *argv[])
      pthread_join( thread_id[idx], NULL);
  }
 
- if(resultFile[0]!=0){
+ if(resultFile.length()!=0){
      FILE *f;
-     f = fopen(resultFile, "a");
+     f = fopen(resultFile.c_str(), "a");
      if (f == NULL)
      {
            printf("ERROR: Error opening file to output!\n");
