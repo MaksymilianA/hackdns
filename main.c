@@ -80,7 +80,7 @@ static string hostname, nsfile, dictionary, resultFile, resultToSave;
 static std::vector<std::string> nsVec;
 
 typedef uint32_t ipv4_t;
-typedef unsigned long int       uintptr_t;
+typedef unsigned long int       uintptr_tcust;
 
 struct dnshdr {
   uint16_t id, opts, qdcount, ancount, nscount, arcount;
@@ -187,7 +187,7 @@ int niskiPoziom3(void *idxServDns)
   rand_init();
 
 
-  unsigned int selectedDns= static_cast<unsigned int>(reinterpret_cast<uintptr_t>(idxServDns));
+  unsigned int selectedDns= static_cast<unsigned int>(reinterpret_cast<uintptr_tcust>(idxServDns));
   unsigned int thNum=selectedDns;
 
   char outTmp[N];
@@ -703,7 +703,7 @@ pthread_t thread_id[threats];
 
 for(idx=0; idx < threats; idx++)
 {
-    if((errorcode=pthread_create( &thread_id[idx], NULL, thread, (void *)(uintptr_t)(idx)))!=0){
+    if((errorcode=pthread_create( &thread_id[idx], NULL, thread, (void *)(uintptr_tcust)(idx)))!=0){
         printf("ERROR: Can't create thread %i. Scan will be incomplete. Use lower value or try optimize your OS. Error code: %i\n", idx, errorcode);
         sleep(5);
         threats=idx;
