@@ -691,7 +691,7 @@ myns2.close();
 if(atype!=3){
     res_init();
     for(huy=0;huy<nsVec.size();huy++){
-        if(MAXNS<huy) break;
+        if(MAXNS<=huy) break;
         _res.nscount++;
         _res.nsaddr_list[huy].sin_family = AF_INET;
         _res.nsaddr_list[huy].sin_addr.s_addr = inet_addr(nsVec[huy].c_str());
