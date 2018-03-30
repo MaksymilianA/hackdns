@@ -492,7 +492,7 @@ if (l >= 0) {
 
                 memset(outTmp,'\0',N);
                 snprintf(outTmp, N, "\t%s\n", dispbuf);
-                printf("r %s",outTmp);
+                printf("%s",outTmp);
                 dowyjscia += outTmp;
           }
 }
@@ -518,7 +518,7 @@ if (l >= 0) {
                 ns_sprintrr(&msg, &rr, NULL, NULL, dispbuf, sizeof(dispbuf));
                 memset(outTmp,'\0',N);
                 snprintf(outTmp, N, "\t%s\n", dispbuf);
-                printf("t %s",outTmp);
+                printf("%s",outTmp);
                 dowyjscia += outTmp;
           }
 }
@@ -543,7 +543,7 @@ if (l >= 0) {
 
           memset(outTmp,'\0',N);
           snprintf(outTmp, N, "\t%s\n", dispbuf);
-          printf("u %s",outTmp);
+          printf("%s",outTmp);
           dowyjscia += outTmp;
     }
 }
@@ -604,11 +604,11 @@ void help(char *prog)
  printf(" -n file - Path to resolv file where are DNS servers\n");
  printf(" -o dir  - Directory path\n");
  printf(" -t int  - Number of threats. (Default 1)\n");
- printf(" -a      - Only find subdomains \n\n");
- printf(" -c      - Search CNAME to takeover \n\n");
- printf(" -x      - Search A,CNAME and bypass local resolver (direct DNS calls) \n\n");
+ printf(" -a      - Only find subdomains \n");
+ printf(" -c      - Search CNAME to takeover \n");
+ printf(" -x      - Search A,CNAME and bypass local resolver (direct DNS calls) \n");
  printf(" -v      - Verbose mode \n\n");
- printf(" example: %s -f dictionaries/common.txt -n servers/yandex.conf -o ./results/ -d domain.com -t 4\n\n",prog);
+ printf(" example: %s -f dictionaries/dnssubminer.txt -n servers/yandex.conf -o ./results/ -d domain.com -t 64\n\n",prog);
 }
 
 int main( int argc , char *argv[])
