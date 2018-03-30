@@ -8,10 +8,7 @@ RUN mkdir /hackdns/dictionaries/
 RUN mkdir /hackdns/results/
 ADD main.c /hackdns/main.c
 ADD Makefile /hackdns/Makefile
-ADD dictionaries/common.txt /hackdns/dictionaries/common.txt
-ADD dictionaries/common-big.txt /hackdns/dictionaries/common-big.txt
-ADD dictionaries/small.txt /hackdns/dictionaries/small.txt
-ADD dictionaries/fourchars.txt /hackdns/dictionaries/fourchars.txt
+ADD dictionaries/ /hackdns/dictionaries/
 ADD servers/google.conf /hackdns/servers/google.conf
 ADD servers/yandex.conf /hackdns/servers/yandex.conf
 ADD servers/top10.conf /hackdns/servers/top10.conf
@@ -37,6 +34,6 @@ ADD servers/us.conf /hackdns/servers/us.conf
 ADD servers/za.conf /hackdns/servers/za.conf
 RUN cd /hackdns/ && make
 RUN ln -s /hackdns/hackdns /bin/hackdns
-RUN  debuginfo-install glibc-2.17-196.el7_4.2.x86_64 libgcc-4.8.5-16.el7_4.2.x86_64 -y
+#RUN  debuginfo-install glibc-2.17-196.el7_4.2.x86_64 libgcc-4.8.5-16.el7_4.2.x86_64 -y
 
 ENTRYPOINT ["bash"]
