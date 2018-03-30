@@ -186,7 +186,6 @@ int niskiPoziom3(void *idxServDns)
 {
   rand_init();
 
-
   unsigned int selectedDns= static_cast<unsigned int>(reinterpret_cast<uintptr_tcust>(idxServDns));
   unsigned int thNum=selectedDns;
 
@@ -412,7 +411,7 @@ char outTmp[N];
 
 u_char nsbuf[N];
 int l, o;
-
+    
 goconlyrecord:
 l = res_search(host, ns_c_in, ns_t_cname, nsbuf, sizeof(nsbuf));
 if(TRY_AGAIN==h_errno) goto goconlyrecord;
@@ -560,12 +559,21 @@ if(atype!=3){
     const int wylicz=(int)((long)arg*podzielone);
     int wyliczUp=(int)(((long)arg*podzielone)+podzielone);
     int i;
-
+    string linex;
+    
     if((threats-1)==(long)arg){
        wyliczUp=lines;
     }
+    
+    res_init();
+    for(int huy=0;huy<nsVec.size();huy++){
+        if(MAXNS<=huy) break;
+        _res.nscount++;
+        _res.nsaddr_list[huy].sin_family = AF_INET;
+        _res.nsaddr_list[huy].sin_addr.s_addr = inet_addr(nsVec[huy].c_str());
+        _res.nsaddr_list[huy].sin_port = htons(53);
+    }
 
-    string linex;
     ifstream mydict (dictionary);
 
     if (mydict.is_open()){
@@ -615,6 +623,7 @@ int main( int argc , char *argv[])
 {
 int opt, idx;
 int huy=0, index=0, errorcode=0;
+pthread_t thread_id[threats];
 
 printf("\n==========================================\n hackDNS 0.1 - Fast DNS recon for hackers \n==========================================\n\n");
 
@@ -681,12 +690,11 @@ podzielone=lines/threats;
 
 string nsentry;
 ifstream myns2 (nsfile);
-if(!myns2){ printf("\nCRITICAL: Wrong path to dictionary file\n\n"); return -1; }
+if(!myns2){ printf("\nCRITICAL: Wrong path to resolver file\n\n"); return -1; }
 while(getline (myns2,nsentry)){
        nsVec.push_back(nsentry.c_str());
 }
 myns2.close();
-
 
 if(atype!=3){
     res_init();
@@ -697,9 +705,15 @@ if(atype!=3){
         _res.nsaddr_list[huy].sin_addr.s_addr = inet_addr(nsVec[huy].c_str());
         _res.nsaddr_list[huy].sin_port = htons(53);
     }
-}
+    if(atype==1){
+       checkArecord(hostname.c_str());
+    }else if(atype==2){
+       takeOverCname(hostname.c_str());
+    }else if(atype==0){
+       generalCheck(hostname.c_str());
+    }
 
-pthread_t thread_id[threats];
+}
 
 for(idx=0; idx < threats; idx++)
 {
@@ -709,17 +723,6 @@ for(idx=0; idx < threats; idx++)
         threats=idx;
         break;
     };
-}
-
-string tmpOut;
-string toSave;
-
-if(atype==1){
-   checkArecord(hostname.c_str());
-}else if(atype==2){
-   takeOverCname(hostname.c_str());
-}else if(atype==0){
-   generalCheck(hostname.c_str());
 }
 
 for(idx=0; idx < threats; idx++)
