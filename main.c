@@ -611,7 +611,6 @@ int main( int argc , char *argv[])
 {
 int opt, idx;
 int huy=0, index=0, errorcode=0;
-pthread_t thread_id[threats];
 
 printf("\n==========================================\n hackDNS 0.1 - Fast DNS recon for hackers \n==========================================\n\n");
 
@@ -703,6 +702,9 @@ if(atype!=3){
     }
 
 }
+    
+    
+pthread_t thread_id[threats];
 
 for(idx=0; idx < threats; idx++)
 {
