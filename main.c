@@ -50,10 +50,6 @@ DEALINGS IN THE SOFTWARE.
 
 using namespace std;
 
-
-
-static   string dowyjscia;
-
 ///////////////////////////////////////////////////////////////////////////
 
 #define N 4096
@@ -78,6 +74,7 @@ static   string dowyjscia;
 static unsigned int threats=1, atype=0, debugMode=0, lines=0, podzielone=0;
 static string hostname, nsfile, dictionary, resultFile, resultToSave;
 static std::vector<std::string> nsVec;
+static string dowyjscia;
 
 typedef uint32_t ipv4_t;
 typedef unsigned long int       uintptr_tcust;
@@ -425,7 +422,7 @@ if (l >= 0) {
          memset(outTmp,'\0',N);
          snprintf(outTmp, N, " Possible to take over CNAME record for domain %s\n", host);
          printf("%s",outTmp);
-         dowyjscia += outTmp;
+         //dowyjscia += outTmp;
     }
 }
 return 0;
@@ -456,7 +453,7 @@ if (l >= 0) {
                         memset(outTmp,'\0',N);
                         snprintf(outTmp, N, "\t%s\n", dispbuf);
                         printf("%s",outTmp);
-                        dowyjscia += outTmp;
+                        //dowyjscia += outTmp;
           }
 }
 return 0;
@@ -492,7 +489,7 @@ if (l >= 0) {
                 memset(outTmp,'\0',N);
                 snprintf(outTmp, N, "\t%s\n", dispbuf);
                 printf("%s",outTmp);
-                dowyjscia += outTmp;
+                //dowyjscia += outTmp;
           }
 }
 
@@ -518,7 +515,7 @@ if (l >= 0) {
                 memset(outTmp,'\0',N);
                 snprintf(outTmp, N, "\t%s\n", dispbuf);
                 printf("%s",outTmp);
-                dowyjscia += outTmp;
+                //dowyjscia += outTmp;
           }
 }
 
@@ -543,7 +540,7 @@ if (l >= 0) {
           memset(outTmp,'\0',N);
           snprintf(outTmp, N, "\t%s\n", dispbuf);
           printf("%s",outTmp);
-          dowyjscia += outTmp;
+          //dowyjscia += outTmp;
     }
 }
 
@@ -565,15 +562,6 @@ if(atype!=3){
        wyliczUp=lines;
     }
     
-    res_init();
-    for(int huy=0;huy<nsVec.size();huy++){
-        if(MAXNS<=huy) break;
-        _res.nscount++;
-        _res.nsaddr_list[huy].sin_family = AF_INET;
-        _res.nsaddr_list[huy].sin_addr.s_addr = inet_addr(nsVec[huy].c_str());
-        _res.nsaddr_list[huy].sin_port = htons(53);
-    }
-
     ifstream mydict (dictionary);
 
     if (mydict.is_open()){
@@ -698,6 +686,7 @@ myns2.close();
 
 if(atype!=3){
     res_init();
+    _res.nscount=0;
     for(huy=0;huy<nsVec.size();huy++){
         if(MAXNS<=huy) break;
         _res.nscount++;
