@@ -44,7 +44,7 @@ $ sh ./start.sh
 
 Stop container
 ```
-$ sh ./start.sh
+$ sh ./stop.sh
 ```
 
 Go to container
