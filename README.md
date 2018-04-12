@@ -52,7 +52,11 @@ Go to container
 $ sh ./bash.sh
 ```
 
-Of course you can skip above step and use your local environment. 
+Of course you can skip above step and build hackdns in your local environment. 
+
+```
+make
+```
 
 Resolve all A, CNAME, MX, TXT records from domains within hackdns.txt using the 100 threads and resolvers within top3.conf. Store the results within output directory:
 
