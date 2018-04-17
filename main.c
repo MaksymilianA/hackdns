@@ -527,7 +527,7 @@ void help(char *prog)
    cout << " -b      - Check AAAA type records (Default A, CNAME, TXT, MX)" << endl;
    cout << " -v      - Verbose mode" << endl;
    cout << " -h      - Show help info\n" << endl;
-   cout << " example: " << prog << " -f dictionaries/hackdns.txt -n servers/yandex.conf -o ./results/ -d domain.com -t 64\n" << endl;
+   cout << " example: " << prog << " -f dictionaries/hackdns.txt -n servers/cloudflare.conf -o ./results/ -d domain.com -t 64\n" << endl;
 }
 
 int main( int argc , char *argv[])

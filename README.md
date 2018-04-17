@@ -22,7 +22,7 @@ Clone the git repository and run `make` command for clang or `make CC=g++` for g
  -v      - Verbose mode
  -h      - Show help info
 
- example: ./hackdns -f dictionaries/dnssubminer.txt -n servers/yandex.conf -o ./results/ -d domain.com -t 64
+ example: ./hackdns -f dictionaries/hackdns.txt -n servers/cloudflare.conf -o ./results/ -d domain.com -t 64
 ```
 
 # Example
@@ -61,23 +61,21 @@ make
 Resolve all A, CNAME, MX, TXT records from domains within hackdns.txt using the 100 threads and resolvers within top3.conf. Store the results within output directory:
 
 ```
-$ ./hackdns -f dictionaries/hackdns.txt -n servers/top3.conf -o ./results/ -d 'domain.com' -t 100
+$ ./hackdns -f dictionaries/hackdns.txt -n servers/cloudflare.conf -o ./results/ -d 'domain.com' -t 100
 ```
 
 Resolve all A records from domains within hackdns.txt using the 100 threads and resolvers within top3.conf in lists and store the results within output directory:
 
 ```
-$ ./hackdns -f dictionaries/hackdns.txt -n servers/top3.conf -o ./results/ -d 'domain.com' -t 500 -a
+$ ./hackdns -f dictionaries/hackdns.txt -n servers/cloudflare.conf -o ./results/ -d 'domain.com' -t 500 -a
 ```
 
 Resolve all AAAA records from domains within hackdns.txt using the 64 threads and resolvers within top3.conf in lists and store the results within output directory:
 
 ```
-$ ./hackdns -f dictionaries/hackdns.txt -n servers/top3.conf -o ./results/ -d 'domain.com' -t 64 -b
+$ ./hackdns -f dictionaries/hackdns.txt -n servers/cloudflare.conf -o ./results/ -d 'domain.com' -t 64 -b
 ```
 
 # Contributors
 Maksymilian Arciemowicz from https://cxsecurity.com/
-
-
 
