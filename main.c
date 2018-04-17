@@ -83,7 +83,7 @@ std::mutex g_pages_mutex;
 
 ///////////////////////////////////////////////////////////////////////////
 
-static unsigned int threats=1, atype=0, debugMode=0, lines=0, podzielone=0, resolveCount=1024;;
+static unsigned int threats=1, atype=0, debugMode=0, lines=0, podzielone=0, resolveCount=1024;
 static string hostname, nsfile, dictionary, resultFile, resultToSave;
 static std::vector<std::string> nsVec;
 static string dowyjscia;
@@ -191,7 +191,6 @@ uint32_t rand_next(void){
     return w;
 }
 ///////////////////////////////////////////////////////////////////////////
-
 void createPacket(struct dnshdr *dnsh, char *query, char *qname, int *query_len, const char *newHost, uint16_t *dns_id, struct dns_question *dnst, int type){
 
             dnsh = (struct dnshdr *)query;
@@ -205,7 +204,7 @@ void createPacket(struct dnshdr *dnsh, char *query, char *qname, int *query_len,
             dnsh->opts = htons(1 << 8);
             dnsh->qdcount = htons(1);
             dnst->qtype = htons(type);
-            dnst->qclass = htons(PROTO_DNS_QCLASS_ALL);
+            dnst->qclass = htons(PROTO_DNS_QCLASS_IP);
 }
 
 
@@ -283,7 +282,7 @@ int readPacket(int *fd, uint8_t *todel, char *qname, unsigned int *selectedDns, 
               (*selectedDns)++;
               return -1;
            }
-
+    
            if (dnsh->ancount == 0)
            {
               return 1;
@@ -387,7 +386,8 @@ int startCore(int idxServDns)
         selectedDns=selectedDns-(selectedDnsTmp*(nsVec.size()));
     }
     if( resolveCount <= tries++ ) {
-       if(debugMode) cout << "[WARNING] Couldn't check the " << linex << "" << endl;
+       if(debugMode) 
+           cout << "[WARNING] Couldn't check the " << linex << " Limit attemps reached" << endl;
        failed=0; ilin++; tries=1;
     }
 
@@ -527,7 +527,7 @@ void help(char *prog)
    cout << " -b      - Check AAAA type records (Default A, CNAME, TXT, MX)" << endl;
    cout << " -v      - Verbose mode" << endl;
    cout << " -h      - Show help info\n" << endl;
-   cout << " example: " << prog << " -f dictionaries/dnssubminer.txt -n servers/yandex.conf -o ./results/ -d domain.com -t 64\n" << endl;
+   cout << " example: " << prog << " -f dictionaries/hackdns.txt -n servers/yandex.conf -o ./results/ -d domain.com -t 64\n" << endl;
 }
 
 int main( int argc , char *argv[])
