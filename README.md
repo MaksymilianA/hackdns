@@ -1,13 +1,16 @@
 # hackdns
 A high-performance DNS scanner written in C/C++ as a alternative for similar programs written in Python, Perl where huge RAM consumption issue occure for big dictionaries. Created to provide high-performance for small devices and workstations. 
 
+# Requirements
+At least GCC 4.9
+
 # Compilation 
-Clone the git repository and run `make` command for clang or `make CC=g++` for gcc. You can use Docker container in Docker/ directory by running `sh ./install.sh` command.
+Clone the git repository and run `make` command for gcc or `make CC=clang++` for clang. You can use Docker container in Docker/ directory by running `sh ./install.sh` command.
 
 # Usage
 ```
 ==========================================
- hackDNS 0.1 - Fast DNS recon for hackers 
+ hackDNS 0.2 - Fast DNS recon for hackers 
 ==========================================
 
  Use:
@@ -19,10 +22,15 @@ Clone the git repository and run `make` command for clang or `make CC=g++` for g
  -c int  - Number of resolves for a name before giving up (Default 1024)
  -a      - Check A type records (Default A, CNAME, TXT, MX)
  -b      - Check AAAA type records (Default A, CNAME, TXT, MX)
+ -s      - Scan ports of A records (EXPERIMENTAL)
+ -r      - Scan ports of SPF records (EXPERIMENTAL)
+ -e int  - Number of threads for SPF port scanning (Default 50)
+ -p      - Specific port to scan (e.g. 22,80,443)
+ -i      - Timeout for port scanning in milliseconds (Default 1000ms)
+ -m      - Audit SPF records
+ -g      - Check host by name enable
  -v      - Verbose mode
  -h      - Show help info
-
- example: ./hackdns -f dictionaries/hackdns.txt -n servers/cloudflare.conf -o ./results/ -d domain.com -t 64
 ```
 
 # Example
@@ -75,6 +83,19 @@ Resolve all AAAA records from domains within hackdns.txt using the 64 threads an
 ```
 $ ./hackdns -f dictionaries/hackdns.txt -n servers/cloudflare.conf -o ./results/ -d 'domain.com' -t 64 -b
 ```
+
+Audit SPF record and get the DNS PTR for all IPs:
+
+```
+$ ./hackdns -f dictionaries/spf.txt -n servers/cloudflare.conf -m -g -d 'domain.com'
+```
+
+Audit SPF record and get the DNS PTR for all IPs and scan selected ports:
+
+```
+$  ./hackdns -f dictionaries/spf.txt -n servers/cloudflare.conf -m -g -p25,80,443,465 -i 2000 -r -e 4 -d 'domain.com'
+```
+
 
 # Contributors
 Maksymilian Arciemowicz from https://cxsecurity.com/

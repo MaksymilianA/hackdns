@@ -98,7 +98,7 @@ std::mutex scanSpfResults_mutex;
 ///////////////////////////////////////////////////////////////////////////
 
 static uint32_t threats=1, atype=0, debugMode=0, lines=0, podzielone=0, resolveCount=1024, scanPorts=0, msTimeout=1000;
-static uint32_t spfScan=1, spfPorts=0, checkHostByName=0, spfScanProcesses=50;
+static uint32_t spfScan=0, spfPorts=0, checkHostByName=0, spfScanProcesses=50;
 static uint32_t x, y, z, w;
 static string hostname, nsfile, dictionary, resultFile;
 static char *ipToSpf;
@@ -109,19 +109,19 @@ typedef uint32_t ipv4_t;
 typedef unsigned long int uintptr_tcust;
 
 struct dnshdr {
-  uint16_t id, opts, qdcount, ancount, nscount, arcount;
+ uint16_t id, opts, qdcount, ancount, nscount, arcount;
 };
 struct dns_question {
-  uint16_t qtype, qclass;
+ uint16_t qtype, qclass;
 };
 struct dns_resource {
-  uint16_t type, _class;
-  uint32_t ttl;
-  uint16_t data_len;
+ uint16_t type, _class;
+ uint32_t ttl;
+ uint16_t data_len;
 } __attribute__((packed));
 struct resolv_entries {
-  uint8_t addrs_len;
-  ipv4_t *addrs;
+ uint8_t addrs_len;
+ ipv4_t *addrs;
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -130,1004 +130,1004 @@ struct resolv_entries {
 
 int strlen_buff(const char *str)
 {
-    if(str == NULL) return 0;
-    int c = 0;
+   if(str == NULL) return 0;
+   int c = 0;
 
-    while (*str++ != 0) c++;
-    return c;
+   while (*str++ != 0) c++;
+   return c;
 }
 void zero_buff(void *buf, int len)
 {
-    char *zero = (char*)buf;
-    while (len--) *zero++ = 0;
+   char *zero = (char*)buf;
+   while (len--) *zero++ = 0;
 }
 static void resolv_skip_name(uint8_t *wskReader, uint8_t *buffer, int *count)
 {
-    unsigned int jumped = 0, offset;
+   unsigned int jumped = 0, offset;
 
-    *count = 1;
-    while(*wskReader != 0)
-    {
-       if(*wskReader >= 192)
-       {
-           offset = (*wskReader) * 256 + *(wskReader+1) - 49152;
-           wskReader = buffer + offset - 1;
-           jumped = 1;
-       }
+   *count = 1;
+   while(*wskReader != 0)
+   {
+      if(*wskReader >= 192)
+      {
+          offset = (*wskReader) * 256 + *(wskReader+1) - 49152;
+          wskReader = buffer + offset - 1;
+          jumped = 1;
+      }
 
-       wskReader = wskReader + 1;
-       if(jumped == 0)
-           *count = *count + 1;
-    }
+      wskReader = wskReader + 1;
+      if(jumped == 0)
+          *count = *count + 1;
+   }
 
-    if(jumped == 1)
-        *count = *count + 1;
+   if(jumped == 1)
+       *count = *count + 1;
 }
 void rand_init(void)
 {
-    x = time(NULL);
-    y = getpid() ^ getppid();
-    z = clock();
-    w = z ^ y;
+   x = time(NULL);
+   y = getpid() ^ getppid();
+   z = clock();
+   w = z ^ y;
 }
 uint32_t rand_next(void){
-    uint32_t t = x;
-    t ^= t << 11;
-    t ^= t >> 8;
-    x = y; y = z; z = w;
-    w ^= w >> 19;
-    w ^= t;
-    return w;
+   uint32_t t = x;
+   t ^= t << 11;
+   t ^= t >> 8;
+   x = y; y = z; z = w;
+   w ^= w >> 19;
+   w ^= t;
+   return w;
 }
 void resolv_domain_to_hostname(char *dstHostname, const char *srcDomain)
 {
-    int len = strlen_buff(srcDomain) + 1;
-    char *lbl = dstHostname, *dstPosition = dstHostname + 1;
-    uint8_t curr_len = 0;
+   int len = strlen_buff(srcDomain) + 1;
+   char *lbl = dstHostname, *dstPosition = dstHostname + 1;
+   uint8_t curr_len = 0;
 
-    while (len-- > 0)
-    {
-        char c = *srcDomain++;
+   while (len-- > 0)
+   {
+       char c = *srcDomain++;
 
-        if (c == '.' || c == 0){
-            *lbl = curr_len;
-            lbl = dstPosition++;
-            curr_len = 0;
-        } else {
-            curr_len++;
-            *dstPosition++ = c;
-        }
-    }
-    *dstPosition = 0;
+       if (c == '.' || c == 0){
+           *lbl = curr_len;
+           lbl = dstPosition++;
+           curr_len = 0;
+       } else {
+           curr_len++;
+           *dstPosition++ = c;
+       }
+   }
+   *dstPosition = 0;
 }
 static bool port_is_open(string ip, uint16_t port){
-    short int sock = -1;
-    int so_error, rval, tries=0;
-    struct timeval tv;
-    struct sockaddr_in sa;
-    fd_set fdset;
+   short int sock = -1;
+   int so_error, rval, tries=0;
+   struct timeval tv;
+   struct sockaddr_in sa;
+   fd_set fdset;
 
-    strncpy((char*)&sa , "\0" , sizeof sa);
-    sa.sin_family = AF_INET;
-    sa.sin_port = htons(port);
-    if(inet_pton(AF_INET, ip.c_str(), &sa.sin_addr)<=0){
-        if(debugMode) cout << "inet failed for " << ip << endl;
-        return -1;
-    }
+   strncpy((char*)&sa , "\0" , sizeof sa);
+   sa.sin_family = AF_INET;
+   sa.sin_port = htons(port);
+   if(inet_pton(AF_INET, ip.c_str(), &sa.sin_addr)<=0){
+       if(debugMode) cout << "inet failed for " << ip << endl;
+       return -1;
+   }
 
-    sock = socket(AF_INET, SOCK_STREAM, 0);
-//        sock = socket(AF_INET, SOCK_NONBLOCK, IPPROTO_TCP);
-    if(sock < 0){
-        if(debugMode) cout << "sock failed port_is_open for " << ip << ":" << port << endl;
-        return false;
-    }
+   sock = socket(AF_INET, SOCK_STREAM, 0);
+   if(sock < 0){
+       if(debugMode) cout << "sock failed port_is_open for " << ip << ":" << port << endl;
+       return false;
+   }
 
-    if(1000<=msTimeout){
-        tv.tv_sec = msTimeout/1000;
-        tv.tv_usec = (msTimeout-(tv.tv_sec*1000))*1000;
-    } else {
-        tv.tv_sec = 0;
-        tv.tv_usec = 1000 * msTimeout;
-    }
+   if(1000<=msTimeout){
+       tv.tv_sec = msTimeout/1000;
+       tv.tv_usec = (msTimeout-(tv.tv_sec*1000))*1000;
+   } else {
+       tv.tv_sec = 0;
+       tv.tv_usec = 1000 * msTimeout;
+   }
 
-    fcntl(sock, F_SETFL,  fcntl(sock, F_GETFL, 0) | O_NONBLOCK);
+   fcntl(sock, F_SETFL,  fcntl(sock, F_GETFL, 0) | O_NONBLOCK);
 
-    rval = connect(sock, (struct sockaddr *)&sa, sizeof(sa));
-    if (rval == 0 || (rval == -1 && errno == EINPROGRESS)){
-        FD_ZERO(&fdset);
-        FD_SET(sock, &fdset);
+   rval = connect(sock, (struct sockaddr *)&sa, sizeof(sa));
+   if (rval == 0 || (rval == -1 && errno == EINPROGRESS)){
+       FD_ZERO(&fdset);
+       FD_SET(sock, &fdset);
 
-        rval=select(sock + 1, NULL, &fdset, NULL, &tv);
+       rval=select(sock + 1, NULL, &fdset, NULL, &tv);
 
-        if (rval == 1){
-            socklen_t len = sizeof so_error;
-            getsockopt(sock, SOL_SOCKET, SO_ERROR, &so_error, &len);
+       if (rval == 1){
+           socklen_t len = sizeof so_error;
+           getsockopt(sock, SOL_SOCKET, SO_ERROR, &so_error, &len);
 
-            if(sock != -1)
-                close(sock);
-            if (so_error == 0){
-                return true;
-            }else{
-                if(debugMode) cout << "soerror failed " << so_error << " for " << ip << ":" << port << endl;
-                return false;
-            }
-        }
-    }
-    if(sock != -1)
-        close(sock);
+           if(sock != -1)
+               close(sock);
+           if (so_error == 0){
+               return true;
+           }else{
+               if(debugMode) cout << "soerror failed " << so_error << " for " << ip << ":" << port << endl;
+               return false;
+           }
+       }
+   }
+   if(sock != -1)
+       close(sock);
 
-    return false;
+   return false;
 }
 
 ///DNS ENGINE/////////////////////////////////////////////////////////////////////
 void createPacket(struct dnshdr *dnsh, char *query, char *qname, int *query_len, const char *newHost, uint16_t *dns_id, struct dns_question *dnst, int type){
-           dnsh = (struct dnshdr *)query;
-           qname = (char *)(dnsh + 1);
-           resolv_domain_to_hostname(qname, newHost);
-           dnst = (struct dns_question *)(qname + strlen_buff(qname) + 1);
-           *query_len = sizeof (struct dnshdr) + strlen_buff(qname) + static_cast<int>(1) + sizeof (struct dns_question);
+          dnsh = (struct dnshdr *)query;
+          qname = (char *)(dnsh + 1);
+          resolv_domain_to_hostname(qname, newHost);
+          dnst = (struct dns_question *)(qname + strlen_buff(qname) + 1);
+          *query_len = sizeof (struct dnshdr) + strlen_buff(qname) + static_cast<int>(1) + sizeof (struct dns_question);
 
-           *dns_id = rand_next() % 0xffff;
-           dnsh->id = *dns_id;
-           dnsh->opts = htons(1 << 8);
-           dnsh->qdcount = htons(1);
-           dnst->qtype = htons(type);
-           dnst->qclass = htons(PROTO_DNS_QCLASS_IP);
+          *dns_id = rand_next() % 0xffff;
+          dnsh->id = *dns_id;
+          dnsh->opts = htons(1 << 8);
+          dnsh->qdcount = htons(1);
+          dnst->qtype = htons(type);
+          dnst->qclass = htons(PROTO_DNS_QCLASS_IP);
 }
 int sendPacket(int *fd, char *query, int *query_len, unsigned int *selectedDns, fd_set *fdset, struct timeval timeo, int *nfds){
-           if (send(*fd, query, *query_len, MSG_NOSIGNAL) == -1)
-           {
-               if(debugMode) cout << "[WARNING] Failed to send packet. Errno: " << errno << " (DNS: " << nsVec[*selectedDns].c_str() << ")" << endl;
-               if (*fd != -1)
-                   close(*fd);
-                   (*selectedDns)++;
-               return -1;
-           }
+          if (send(*fd, query, *query_len, MSG_NOSIGNAL) == -1)
+          {
+              if(debugMode) cout << "[WARNING] Failed to send packet. Errno: " << errno << " (DNS: " << nsVec[*selectedDns].c_str() << ")" << endl;
+              if (*fd != -1)
+                  close(*fd);
+                  (*selectedDns)++;
+              return -1;
+          }
 
-           fcntl(*fd, F_SETFL, O_NONBLOCK | fcntl(*fd, F_GETFL, 0));
-           FD_ZERO(fdset);
-           FD_SET(*fd, fdset);
+          fcntl(*fd, F_SETFL, O_NONBLOCK | fcntl(*fd, F_GETFL, 0));
+          FD_ZERO(fdset);
+          FD_SET(*fd, fdset);
 
-           timeo.tv_sec = 1;
-           timeo.tv_usec = 0;
-           *nfds = select(*fd + 1, fdset, NULL, NULL, &timeo);
+          timeo.tv_sec = 1;
+          timeo.tv_usec = 0;
+          *nfds = select(*fd + 1, fdset, NULL, NULL, &timeo);
 
-           if (*nfds == -1)
-           {
-                 if(debugMode) cout << "[WARNING] select() failed" << endl;
-                 if(*fd != -1)
-                     close(*fd);
-                 (*selectedDns)++;
-                 return -1;
-           }
-           else if (nfds == 0)
-           {
-                 if(debugMode) cout << "[WARNING] Couldn't resolve (DNS: " << nsVec[*selectedDns].c_str() << ")" << endl;
-                 if(*fd != -1)
-                     close(*fd);
-                 (*selectedDns)++;
-                 return -1;
-           }
+          if (*nfds == -1)
+          {
+                if(debugMode) cout << "[WARNING] select() failed" << endl;
+                if(*fd != -1)
+                    close(*fd);
+                (*selectedDns)++;
+                return -1;
+          }
+          else if (nfds == 0)
+          {
+                if(debugMode) cout << "[WARNING] Couldn't resolve (DNS: " << nsVec[*selectedDns].c_str() << ")" << endl;
+                if(*fd != -1)
+                    close(*fd);
+                (*selectedDns)++;
+                return -1;
+          }
 
-           return 0;
+          return 0;
 }
 int connectToDnsServer(int *fd, unsigned int *selectedDns, struct sockaddr_in addr, const char *dnsserv){
 
-           zero_buff(&addr, sizeof (struct sockaddr_in));
-           addr.sin_family = AF_INET;
-           inet_aton(dnsserv, &addr.sin_addr);
-           addr.sin_port = htons(53);
+          zero_buff(&addr, sizeof (struct sockaddr_in));
+          addr.sin_family = AF_INET;
+          inet_aton(dnsserv, &addr.sin_addr);
+          addr.sin_port = htons(53);
 
-           if(*fd != -1) close(*fd);
+          if(*fd != -1) close(*fd);
 
-           if ((*fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
-           {
-               (*selectedDns)++;
-               return -1;
-           }
+          if ((*fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
+          {
+              (*selectedDns)++;
+              return -1;
+          }
 
-           if (connect(*fd, (struct sockaddr *)&addr, sizeof (struct sockaddr_in)) == -1)
-           {
-               if(*fd != -1)
-                   close(*fd);
-               (*selectedDns)++;
-               return -1;
-           }
+          if (connect(*fd, (struct sockaddr *)&addr, sizeof (struct sockaddr_in)) == -1)
+          {
+              if(*fd != -1)
+                  close(*fd);
+              (*selectedDns)++;
+              return -1;
+          }
 
-          return 0;
+         return 0;
 }
 int readPacket(int *fd, char *qname, unsigned int *selectedDns,  struct dns_question *dnst, struct dnshdr *dnsh, uint16_t *dns_id, const char *host, int type, std::string &dowyja, unsigned int levelSpf){
-          u_char response[N];
-          char dispbuf[N], debuf[N];
-          unsigned char *name;
-          int stop, i, l, o;
-          uint16_t ancount;
-          ns_msg msg;
-          string ip;
+         u_char response[N];
+         char dispbuf[N], debuf[N];
+         unsigned char *name;
+         int stop, i, l, o;
+         uint16_t ancount;
+         ns_msg msg;
+         string ip;
 
-          memset(response,'\0',N);
+         memset(response,'\0',N);
 
-          int ret = recvfrom(*fd, response,  sizeof (response), MSG_NOSIGNAL, NULL, NULL);
+         int ret = recvfrom(*fd, response,  sizeof (response), MSG_NOSIGNAL, NULL, NULL);
 
-          if (ret < (sizeof (struct dnshdr) + strlen_buff(qname) + 1 + sizeof (struct dns_question))){
-             if(debugMode) cout << "[WARNING] recfrom failed. ret: " << ret << endl;
-             if (*fd != -1)
-                 close(*fd);
-             (*selectedDns)++;
-             return -1;
-          }
+         if (ret < (sizeof (struct dnshdr) + strlen_buff(qname) + 1 + sizeof (struct dns_question))){
+            if(debugMode) cout << "[WARNING] recfrom failed. ret: " << ret << endl;
+            if (*fd != -1)
+                close(*fd);
+            (*selectedDns)++;
+            return -1;
+         }
 
-          dnsh = (struct dnshdr *) response;
-          qname = (char *)(dnsh + 1);
-          dnst = (struct dns_question *)(qname + strlen_buff(qname) + 1);
-          name = (unsigned char *)(dnst + 1);
+         dnsh = (struct dnshdr *) response;
+         qname = (char *)(dnsh + 1);
+         dnst = (struct dns_question *)(qname + strlen_buff(qname) + 1);
+         name = (unsigned char *)(dnst + 1);
 
-          if (dnsh->id != *dns_id){
-             if(debugMode) cout << "[WARNING] Collision ID received. dns_id is not the same as was sent." << endl;
-             if(*fd != -1)
-                 close(*fd);
-             (*selectedDns)++;
-             return -1;
-          }
+         if (dnsh->id != *dns_id){
+            if(debugMode) cout << "[WARNING] Collision ID received. dns_id is not the same as was sent." << endl;
+            if(*fd != -1)
+                close(*fd);
+            (*selectedDns)++;
+            return -1;
+         }
 
-          if (dnsh->ancount == 0){
-             return 1; // NOT FOUND
-          }
+         if (dnsh->ancount == 0){
+            return 1; // NOT FOUND
+         }
 
-          struct dns_resource *r_data = NULL;
-          resolv_skip_name(name, response, &stop);
-          name = name + stop;
+         struct dns_resource *r_data = NULL;
+         resolv_skip_name(name, response, &stop);
+         name = name + stop;
 
-          r_data = (struct dns_resource *)name;
+         r_data = (struct dns_resource *)name;
 
-          ancount = ntohs(dnsh->ancount);
+         ancount = ntohs(dnsh->ancount);
 
-          ns_initparse(response, r_data->data_len, &msg);
-          l = ns_msg_count(msg, ns_s_an);
+         ns_initparse(response, r_data->data_len, &msg);
+         l = ns_msg_count(msg, ns_s_an);
 
-          for (i = 0; i < ancount; i++)
-          {
-              ns_rr rr;
-              memset(dispbuf,'\0',N);
-              ns_parserr(&msg, ns_s_an, i, &rr);
+         for (i = 0; i < ancount; i++)
+         {
+             ns_rr rr;
+             memset(dispbuf,'\0',N);
+             ns_parserr(&msg, ns_s_an, i, &rr);
 
-              if(type==PROTO_DNS_QTYPE_MX && rr.type!=PROTO_DNS_QTYPE_MX){
-                  continue;
-              }
-              if(type==PROTO_DNS_QTYPE_TXT && rr.type!=PROTO_DNS_QTYPE_TXT){
-                  continue;
-              }
+             if(type==PROTO_DNS_QTYPE_MX && rr.type!=PROTO_DNS_QTYPE_MX){
+                 continue;
+             }
+             if(type==PROTO_DNS_QTYPE_TXT && rr.type!=PROTO_DNS_QTYPE_TXT){
+                 continue;
+             }
 
-              ns_sprintrr(&msg, &rr, NULL, NULL, dispbuf, sizeof(dispbuf));
-              dowyja += "\t";
-              dowyja += dispbuf;
-              dowyja += "\n";
+             ns_sprintrr(&msg, &rr, NULL, NULL, dispbuf, sizeof(dispbuf));
+             dowyja += "\t";
+             dowyja += dispbuf;
+             dowyja += "\n";
 
-              if(rr.type==PROTO_DNS_QTYPE_PTR){
-                   return 0;
-              }
+             if(rr.type==PROTO_DNS_QTYPE_PTR){
+                  return 0;
+             }
 
-              if(rr.type==PROTO_DNS_QTYPE_A){
-                   if (r_data->_class == htons(PROTO_DNS_QCLASS_IP))
-                   {
-                         memset(debuf, '\0', sizeof debuf);
-                         inet_ntop(AF_INET, ns_rr_rdata(rr), debuf, sizeof(debuf));
-                         ip = debuf;
+             if(rr.type==PROTO_DNS_QTYPE_A){
+                  if (r_data->_class == htons(PROTO_DNS_QCLASS_IP))
+                  {
+                        memset(debuf, '\0', sizeof debuf);
+                        inet_ntop(AF_INET, ns_rr_rdata(rr), debuf, sizeof(debuf));
+                        ip = debuf;
 
-                         if ( scanPorts && scanResults.find(ip) == scanResults.end() ) {
-                              for (auto it = skanThisPorts.begin(); it != skanThisPorts.end(); it++) {
-                                   if (port_is_open(ip, *it)){
-                                       cout << "\t>>> Port " << ip << ":" << *it << " is open" << endl;
-                                       scanResults_mutex.lock();
-                                       scanResults[ip].insert(pair<int,int>(*it, 1));
-                                       scanResults_mutex.unlock();
-                                   }
-                              }
-                              scanResults_mutex.lock();
-                              scanResults[ip].insert(pair<int,int>(0, 0));;
-                              scanResults_mutex.unlock();
+                        if ( scanPorts && scanResults.find(ip) == scanResults.end() ) {
+                             for (auto it = skanThisPorts.begin(); it != skanThisPorts.end(); it++) {
+                                  if (port_is_open(ip, *it)){
+                                      cout << "\t>>> Port " << ip << ":" << *it << " is open" << endl;
+                                      scanResults_mutex.lock();
+                                      scanResults[ip].insert(pair<int,int>(*it, 1));
+                                      scanResults_mutex.unlock();
+                                  }
+                             }
+                             scanResults_mutex.lock();
+                             scanResults[ip].insert(pair<int,int>(0, 0));;
+                             scanResults_mutex.unlock();
+                        }
+                  }
+             }
+
+             // SPF VERIFICATOR
+             if(spfScan && rr.type==PROTO_DNS_QTYPE_TXT){
+
+                     if(levelSpf<=MAX_SPF_LEVEL_RECURSION){
+
+                         try {
+                               regex spfIsPresent( "v\\=spf" );
+                               std::cmatch results;
+
+                               cout << "\t" << dispbuf << endl;
+
+                               if(std::regex_search(dispbuf, results, spfIsPresent)) {
+                                   researchSpf(dispbuf, levelSpf);
+                               }
+                               continue;
                          }
-                   }
-              }
 
-              // SPF VERIFICATOR
-              if(rr.type==PROTO_DNS_QTYPE_TXT){
-
-                      if(levelSpf<=MAX_SPF_LEVEL_RECURSION){
-
-                          try {
-                                regex spfIsPresent( "v\\=spf" );
-                                std::cmatch results;
-
-                                if(std::regex_search(dispbuf, results, spfIsPresent)) {
-                                    cout << "\t" << dispbuf << endl;
-                                    researchSpf(dispbuf, levelSpf);
-                                }
-                          }
-
-                          catch (const std::regex_error& e) {
-                                std::cout << "regex_error caught: " << e.what() << '\n';
-                          }
-                      }
-                      continue;
-              }
-              cout << "\t" << dispbuf << endl;
-          }
-          return 0;
+                         catch (const std::regex_error& e) {
+                               std::cout << "regex_error caught: " << e.what() << '\n';
+                         }
+                     }
+                     continue;
+             }
+             cout << "\t" << dispbuf << endl;
+         }
+         return 0;
 }
 
 int researchSpf(char *outTmp, unsigned int level){
 
-          if(level++ > MAX_SPF_LEVEL_RECURSION) {
-              cout << "WARNING! Recursion limit reached. It may mean that your SPF syntax is incorrect and hackers may try spoof email from this domain. Check SPF syntax" << endl;
-              return -1;
-          }
+         if(level++ > MAX_SPF_LEVEL_RECURSION) {
+             cout << "WARNING! Recursion limit reached. It may mean that your SPF syntax is incorrect and hackers may try spoof email from this domain. Check SPF syntax" << endl;
+             return -1;
+         }
 
-          string spfCheckString=outTmp, tempo;
-          std::string::const_iterator start = spfCheckString.begin();
-          unsigned int selectedDns=0;
-          uint16_t dns_id;
-          fd_set fdset;
-          string linex;
-          char *query;
-          query=(char*)malloc(DNS_QUERY_SIZE);
+         string spfCheckString=outTmp, tempo;
+         std::string::const_iterator start = spfCheckString.begin();
+         unsigned int selectedDns=0;
+         uint16_t dns_id;
+         fd_set fdset;
+         string linex;
+         char *query;
+         query=(char*)malloc(DNS_QUERY_SIZE);
 
-          char failed=0;
-          char *qname=NULL;
-          string dowyja;
+         char failed=0;
+         char *qname=NULL;
+         string dowyja;
 
-          struct dnshdr *dnsh;
-          struct sockaddr_in addr = {0};
-          struct dns_question *dnst;
-          struct timeval timeo;
+         struct dnshdr *dnsh;
+         struct sockaddr_in addr = {0};
+         struct dns_question *dnst;
+         struct timeval timeo;
 
-          int query_len, fd = -1, i = 0, nfds, selectedDnsTmp=0, tries=0;
+         int query_len, fd = -1, i = 0, nfds, selectedDnsTmp=0, tries=0;
 
-          regex exludedLoops( "(google.com|outlook.com).( |\t)" );
-          match_results<std::string::const_iterator> ignoreThisLookups;
-          if(regex_search(spfCheckString, ignoreThisLookups, exludedLoops)){
-              return 2;
-          };
+         regex exludedLoops( "(google.com|outlook.com).( |\t)" );
+         match_results<std::string::const_iterator> ignoreThisLookups;
+         if(regex_search(spfCheckString, ignoreThisLookups, exludedLoops)){
+             return 2;
+         };
 
-          try {
-              regex ipV4template( "(\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:\\/\\d{1,2}| |$))");
-              match_results<std::string::const_iterator> resultIps;
-              while ( regex_search(start, spfCheckString.cend(), resultIps, ipV4template) )
-              {
-                  outputSpf_mutex.lock();
-                  outputSpf[resultIps[1]]=1;
-                  outputSpf_mutex.unlock();
-                  start = resultIps[0].second ;
+         try {
+             regex ipV4template( "(\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:\\/\\d{1,2}| |$))");
+             match_results<std::string::const_iterator> resultIps;
+             while ( regex_search(start, spfCheckString.cend(), resultIps, ipV4template) )
+             {
+                 outputSpf_mutex.lock();
+                 outputSpf[resultIps[1]]=1;
+                 outputSpf_mutex.unlock();
+                 start = resultIps[0].second ;
+             }
+         }
+
+         catch (const std::regex_error& e) {
+            std::cout << "regex_error caught: " << e.what() << e.code() << endl;
+         }
+
+         regex recursiveSearch( "(include|a)\\:([a-zA-Z0-9\\.\\-_]{1,254}\\.[a-zA-Z]{2,}) ");
+         match_results<std::string::const_iterator> resultLookups;
+         start = spfCheckString.begin();
+
+         while ( regex_search(start, spfCheckString.cend(), resultLookups, recursiveSearch) )
+         {
+              tempo=resultLookups[2];
+
+              if (outputSpf.count(tempo)){
+                   outputSpf_mutex.lock();
+                   outputSpf[tempo] += 1;
+                   outputSpf_mutex.unlock();
+
+                   if(level++ > MAX_SPF_LEVEL_RECURSION)
+                   {
+                       break;
+                   }
+              } else {
+                   outputSpf_mutex.lock();
+                   outputSpf[tempo]=1;
+                   outputSpf_mutex.unlock();
+
+                   start = resultLookups[0].second;
+
+                   establishConnectionDNServerSpf:
+                   if(selectedDns>=nsVec.size()){
+                       selectedDnsTmp=selectedDns/nsVec.size();
+                       selectedDns=selectedDns-(selectedDnsTmp*(nsVec.size()));
+                   }
+
+                   if( resolveCount <= tries++ ){
+                       if(debugMode) cout << "[WARNING] Couldn't check the SPF " << tempo << " Limit reached" << endl;
+                       failed=0; tries=1;
+                   }
+
+                   if(connectToDnsServer(&fd, &selectedDns, addr, nsVec[selectedDns].c_str()) == -1){
+                        if(debugMode) cout << "[WARNING] Spf check failed during creating socket (DNS: " << nsVec[selectedDns].c_str() << ")" << endl;
+                        tries=0;
+                        goto establishConnectionDNServerSpf;
+                   }
+
+                   memset(query,'\0',DNS_QUERY_SIZE);
+                   createPacket(dnsh, query, qname, &query_len, tempo.c_str(), &dns_id, dnst, PROTO_DNS_QTYPE_TXT);
+
+                   if(sendPacket(&fd, query, &query_len, &selectedDns, &fdset, timeo, &nfds)==-1){
+                       failed=1; goto establishConnectionDNServerSpf;
+                   };
+
+                   if (FD_ISSET(fd, &fdset))
+                   {
+                       if(readPacket(&fd, qname, &selectedDns, dnst, dnsh, &dns_id, linex.c_str(), PROTO_DNS_QTYPE_TXT, dowyja, level)==-1){
+                           failed=1; goto establishConnectionDNServerSpf;
+                       };
+                   } else {
+                       if(debugMode) cout << "[WARNING] SPF network connection failed (DNS: " << nsVec[selectedDns].c_str() << ")" << endl;
+                           selectedDns++; failed=1;
+                           goto establishConnectionDNServerSpf;
+                   }
+                   tries=0;
               }
-          }
+         }
 
-          catch (const std::regex_error& e) {
-             std::cout << "regex_error caught: " << e.what() << e.code() << endl;
-          }
+         if(fd != -1)
+           close(fd);
+         free(query);
 
-          regex recursiveSearch( "(include|a)\\:([a-zA-Z0-9\\.\\-_]{1,254}\\.[a-zA-Z]{2,}) ");
-          match_results<std::string::const_iterator> resultLookups;
-          start = spfCheckString.begin();
-
-          tempo=resultLookups[2];
-
-          while ( regex_search(start, spfCheckString.cend(), resultLookups, recursiveSearch) )
-          {
-               tempo=resultLookups[2];
-
-               if (outputSpf.count(tempo)){
-                    outputSpf_mutex.lock();
-                    outputSpf[tempo] += 1;
-                    outputSpf_mutex.unlock();
-
-                    if(level++ > MAX_SPF_LEVEL_RECURSION)
-                    {
-                        break;
-                    }
-               } else {
-                    outputSpf_mutex.lock();
-                    outputSpf[tempo]=1;
-                    outputSpf_mutex.unlock();
-
-                    start = resultLookups[0].second;
-
-                    establishConnectionDNServerSpf:
-                    if(selectedDns>=nsVec.size()){
-                        selectedDnsTmp=selectedDns/nsVec.size();
-                        selectedDns=selectedDns-(selectedDnsTmp*(nsVec.size()));
-                    }
-
-                    if( resolveCount <= tries++ ){
-                        if(debugMode) cout << "[WARNING] Couldn't check the SPF " << tempo << " Limit reached" << endl;
-                        failed=0; tries=1;
-                    }
-
-                    if(connectToDnsServer(&fd, &selectedDns, addr, nsVec[selectedDns].c_str()) == -1){
-                         if(debugMode) cout << "[WARNING] Spf check failed during creating socket (DNS: " << nsVec[selectedDns].c_str() << ")" << endl;
-                         tries=0;
-                         goto establishConnectionDNServerSpf;
-                    }
-
-                    memset(query,'\0',DNS_QUERY_SIZE);
-                    createPacket(dnsh, query, qname, &query_len, tempo.c_str(), &dns_id, dnst, PROTO_DNS_QTYPE_TXT);
-
-                    if(sendPacket(&fd, query, &query_len, &selectedDns, &fdset, timeo, &nfds)==-1){
-                        failed=1; goto establishConnectionDNServerSpf;
-                    };
-
-                    if (FD_ISSET(fd, &fdset))
-                    {
-                        if(readPacket(&fd, qname, &selectedDns, dnst, dnsh, &dns_id, linex.c_str(), PROTO_DNS_QTYPE_TXT, dowyja, level)==-1){
-                            failed=1; goto establishConnectionDNServerSpf;
-                        };
-                    } else {
-                        if(debugMode) cout << "[WARNING] SPF network connection failed (DNS: " << nsVec[selectedDns].c_str() << ")" << endl;
-                            selectedDns++; failed=1;
-                            goto establishConnectionDNServerSpf;
-                    }
-                    tries=0;
-               }
-          }
-
-          if(fd != -1)
-            close(fd);
-          free(query);
-
-          return 0;
+         return 0;
 }
 
 int startCore(int idxServDns)
 {
-   rand_init();
+  rand_init();
 
-   unsigned int selectedDns=idxServDns, thNum=selectedDns;
+  unsigned int selectedDns=idxServDns, thNum=selectedDns;
 
-   char query[DNS_QUERY_SIZE];
-   char failed=0;
-   char *qname=NULL;
-   string dowyja;
+  char query[DNS_QUERY_SIZE];
+  char failed=0;
+  char *qname=NULL;
+  string dowyja;
 
-   struct dnshdr *dnsh;
-   struct sockaddr_in addr = {0};
-   struct dns_question *dnst;
-   struct timeval timeo;
+  struct dnshdr *dnsh;
+  struct sockaddr_in addr = {0};
+  struct dns_question *dnst;
+  struct timeval timeo;
 
-   const int wylicz=(int)((long)selectedDns*podzielone), consthread=idxServDns;
-   int wyliczUp=(int)(((long)selectedDns*podzielone)+podzielone);
-   int ilin=0, query_len, fd = -1, i = 0, nfds, selectedDnsTmp, tries=0;
-   uint16_t dns_id;
-   fd_set fdset;
-   string linex;
-   ifstream mydict (dictionary);
+  const int wylicz=(int)((long)selectedDns*podzielone), consthread=idxServDns;
+  int wyliczUp=(int)(((long)selectedDns*podzielone)+podzielone);
+  int ilin=0, query_len, fd = -1, i = 0, nfds, selectedDnsTmp, tries=0;
+  uint16_t dns_id;
+  fd_set fdset;
+  string linex;
+  ifstream mydict (dictionary);
 
-   //////////////////////////////////////////////////////////////
-   if((long)selectedDns==(threats-1)){ // LAST THREAD
-        wyliczUp=lines;
-   }
+  //////////////////////////////////////////////////////////////
+  if((long)selectedDns==(threats-1)){ // LAST THREAD
+       wyliczUp=lines;
+  }
 
-   ///// BACK HERE IF DNS SERVER FAIL AND CHANGE DNS
-      establishConnectionDNServer:
-   if(selectedDns>=nsVec.size()){
-       selectedDnsTmp=selectedDns/nsVec.size();
-       selectedDns=selectedDns-(selectedDnsTmp*(nsVec.size()));
-   }
-   if( resolveCount <= tries++ ) {
-      if(debugMode)
-          cout << "[WARNING] Couldn't check the " << linex << " Limit attemps reached" << endl;
-      failed=0; ilin++; tries=1;
-   }
+  ///// BACK HERE IF DNS SERVER FAIL AND CHANGE DNS
+     establishConnectionDNServer:
+  if(selectedDns>=nsVec.size()){
+      selectedDnsTmp=selectedDns/nsVec.size();
+      selectedDns=selectedDns-(selectedDnsTmp*(nsVec.size()));
+  }
+  if( resolveCount <= tries++ ) {
+     if(debugMode)
+         cout << "[WARNING] Couldn't check the " << linex << " Limit attemps reached" << endl;
+     failed=0; ilin++; tries=1;
+  }
 
-   if(connectToDnsServer(&fd, &selectedDns, addr, nsVec[selectedDns].c_str()) == -1){
-       if(debugMode) cout << "[WARNING] Failed during creating socket (DNS: " << nsVec[selectedDns].c_str() << ")" << endl;
-       tries=0;
-       goto establishConnectionDNServer;
-   }
+  if(connectToDnsServer(&fd, &selectedDns, addr, nsVec[selectedDns].c_str()) == -1){
+      if(debugMode) cout << "[WARNING] Failed during creating socket (DNS: " << nsVec[selectedDns].c_str() << ")" << endl;
+      tries=0;
+      goto establishConnectionDNServer;
+  }
 
-   if (mydict.is_open())
-   {
-        for (; ilin < wyliczUp; ilin++){
-            if(wylicz<=ilin){
-               if(failed==0){
-                    getline (mydict,linex);
-                    lecisziom:
-                    if(linex.length()!=0)
-                        linex += ".";
-                    linex += hostname;
-               } else {
-                    if(failed==1){ failed = 0; goto gotoarec; }
-                    else if(failed==2){ failed = 0; goto gotomxrec; }
-                    else if(failed==3){ failed = 0; goto gototxtrec; }
-                    failed = 0;
-               }
+  if (mydict.is_open())
+  {
+       for (; ilin < wyliczUp; ilin++){
+           if(wylicz<=ilin){
+              if(failed==0){
+                   getline (mydict,linex);
+                   lecisziom:
+                   if(linex.length()!=0)
+                       linex += ".";
+                   linex += hostname;
+              } else {
+                   if(failed==1){ failed = 0; goto gotoarec; }
+                   else if(failed==2){ failed = 0; goto gotomxrec; }
+                   else if(failed==3){ failed = 0; goto gototxtrec; }
+                   failed = 0;
+              }
 
-               if(linex.length()==0) { continue; }
+              if(linex.length()==0) { continue; }
+              // AAAA TYPE
+              if(atype==2){
+                   memset(query,'\0',DNS_QUERY_SIZE);
+                   createPacket(dnsh, query, qname, &query_len, linex.c_str(), &dns_id, dnst, PROTO_DNS_QTYPE_AAAA);
+                   if(sendPacket(&fd, query, &query_len, &selectedDns, &fdset, timeo, &nfds)==-1){
+                       failed=1; goto establishConnectionDNServer;
+                   };
+                   if (FD_ISSET(fd, &fdset))
+                   {
+                       if(readPacket(&fd, qname, &selectedDns, dnst, dnsh, &dns_id, linex.c_str(), PROTO_DNS_QTYPE_AAAA, dowyja, 0)==-1){
+                            failed=1; goto establishConnectionDNServer;
+                       };
+                   } else {
+                       if(debugMode) cout << "[WARNING] Network connection failed (DNS: " << nsVec[selectedDns].c_str() << ")" << endl;
+                       selectedDns++; failed=1;
+                       goto establishConnectionDNServer;
+                   }
+                   tries=0; continue;
+              }
 
-               // AAAA TYPE
-               if(atype==2){
-                    memset(query,'\0',DNS_QUERY_SIZE);
-                    createPacket(dnsh, query, qname, &query_len, linex.c_str(), &dns_id, dnst, PROTO_DNS_QTYPE_AAAA);
-                    if(sendPacket(&fd, query, &query_len, &selectedDns, &fdset, timeo, &nfds)==-1){
+              // A TYPE
+              gotoarec:
+              memset(query,'\0',DNS_QUERY_SIZE);
+              createPacket(dnsh, query, qname, &query_len, linex.c_str(), &dns_id, dnst, PROTO_DNS_QTYPE_A);
+              if(sendPacket(&fd, query, &query_len, &selectedDns, &fdset, timeo, &nfds)==-1){
+                    failed=1; goto establishConnectionDNServer;
+               };
+              if (FD_ISSET(fd, &fdset))
+              {
+                   if(readPacket(&fd, qname, &selectedDns, dnst, dnsh, &dns_id, linex.c_str(), PROTO_DNS_QTYPE_A, dowyja, 0)==-1){
                         failed=1; goto establishConnectionDNServer;
-                    };
-                    if (FD_ISSET(fd, &fdset))
-                    {
-                        if(readPacket(&fd, qname, &selectedDns, dnst, dnsh, &dns_id, linex.c_str(), PROTO_DNS_QTYPE_AAAA, dowyja, 0)==-1){
-                             failed=1; goto establishConnectionDNServer;
-                        };
-                    } else {
-                        if(debugMode) cout << "[WARNING] Network connection failed (DNS: " << nsVec[selectedDns].c_str() << ")" << endl;
-                        selectedDns++; failed=1;
-                        goto establishConnectionDNServer;
-                    }
-                    tries=0; continue;
-               }
+                   };
+              } else {
+                   if(debugMode) cout << "[WARNING] Network connection failed (DNS: " << nsVec[selectedDns].c_str() << ")" << endl;
+                   selectedDns++; failed=1;
+                   goto establishConnectionDNServer;
+              }
 
-               // A TYPE
-               gotoarec:
-               memset(query,'\0',DNS_QUERY_SIZE);
-               createPacket(dnsh, query, qname, &query_len, linex.c_str(), &dns_id, dnst, PROTO_DNS_QTYPE_A);
-               if(sendPacket(&fd, query, &query_len, &selectedDns, &fdset, timeo, &nfds)==-1){
-                     failed=1; goto establishConnectionDNServer;
-                };
-               if (FD_ISSET(fd, &fdset))
-               {
-                    if(readPacket(&fd, qname, &selectedDns, dnst, dnsh, &dns_id, linex.c_str(), PROTO_DNS_QTYPE_A, dowyja, 0)==-1){
-                         failed=1; goto establishConnectionDNServer;
-                    };
-               } else {
-                    if(debugMode) cout << "[WARNING] Network connection failed (DNS: " << nsVec[selectedDns].c_str() << ")" << endl;
-                    selectedDns++; failed=1;
-                    goto establishConnectionDNServer;
-               }
+              if(atype==1) { tries=0; continue; }
 
-               if(atype==1) { tries=0; continue; }
+              // MX TYPE
+              gotomxrec:
+              memset(query,'\0',DNS_QUERY_SIZE);
+              createPacket(dnsh, query, qname, &query_len, linex.c_str(), &dns_id, dnst, PROTO_DNS_QTYPE_MX);
+              if(sendPacket(&fd, query, &query_len, &selectedDns, &fdset, timeo, &nfds)==-1){
+                    failed=2; goto establishConnectionDNServer;
+               };
+              if (FD_ISSET(fd, &fdset))
+              {
+                  if(readPacket(&fd, qname, &selectedDns, dnst, dnsh, &dns_id, linex.c_str(), PROTO_DNS_QTYPE_MX, dowyja, 0)==-1){
+                        failed=2; goto establishConnectionDNServer;
+                   };
+              } else {
+                   if(debugMode) cout << "[WARNING] Network connection failed (DNS: " << nsVec[selectedDns].c_str() << ")" << endl;
+                   selectedDns++; failed=2;
+                   goto establishConnectionDNServer;
+              }
 
-               // MX TYPE
-               gotomxrec:
-               memset(query,'\0',DNS_QUERY_SIZE);
-               createPacket(dnsh, query, qname, &query_len, linex.c_str(), &dns_id, dnst, PROTO_DNS_QTYPE_MX);
-               if(sendPacket(&fd, query, &query_len, &selectedDns, &fdset, timeo, &nfds)==-1){
-                     failed=2; goto establishConnectionDNServer;
-                };
-               if (FD_ISSET(fd, &fdset))
-               {
-                   if(readPacket(&fd, qname, &selectedDns, dnst, dnsh, &dns_id, linex.c_str(), PROTO_DNS_QTYPE_MX, dowyja, 0)==-1){
-                         failed=2; goto establishConnectionDNServer;
-                    };
-               } else {
-                    if(debugMode) cout << "[WARNING] Network connection failed (DNS: " << nsVec[selectedDns].c_str() << ")" << endl;
-                    selectedDns++; failed=2;
-                    goto establishConnectionDNServer;
-               }
-
-               // TXT TYPE
-               gototxtrec:
-               memset(query,'\0',DNS_QUERY_SIZE);
-               createPacket(dnsh, query, qname, &query_len, linex.c_str(), &dns_id, dnst, PROTO_DNS_QTYPE_TXT);
-               if(sendPacket(&fd, query, &query_len, &selectedDns, &fdset, timeo, &nfds)==-1){
-                     failed=3; goto establishConnectionDNServer;
-                };
-               if (FD_ISSET(fd, &fdset))
-               {
-                   if(readPacket(&fd, qname, &selectedDns, dnst, dnsh, &dns_id, linex.c_str(), PROTO_DNS_QTYPE_TXT, dowyja, 0)==-1){
-                         failed=3; goto establishConnectionDNServer;
-                    };
-               } else {
-                    if(debugMode) cout << "[WARNING] Network connection failed (DNS: " << nsVec[selectedDns].c_str() << ")" << endl;
-                    selectedDns++; failed=3;
-                    goto establishConnectionDNServer;
-               }
-               tries=0;
-            } else {
-                  mydict.ignore(1024, mydict.widen('\n'));
-            }
-        }
-    } else {
-        if(debugMode) cout << "\nERROR: Can not open dictionary file :( \n\n" << endl;
-    }
-    mydict.close();
-    outputDns_mutex.lock();
-    outputDns[consthread] = dowyja;
-    outputDns_mutex.unlock();
-    return 0;
+              // TXT TYPE
+              gototxtrec:
+              memset(query,'\0',DNS_QUERY_SIZE);
+              createPacket(dnsh, query, qname, &query_len, linex.c_str(), &dns_id, dnst, PROTO_DNS_QTYPE_TXT);
+              if(sendPacket(&fd, query, &query_len, &selectedDns, &fdset, timeo, &nfds)==-1){
+                    failed=3; goto establishConnectionDNServer;
+              };
+              if (FD_ISSET(fd, &fdset))
+              {
+                  if(readPacket(&fd, qname, &selectedDns, dnst, dnsh, &dns_id, linex.c_str(), PROTO_DNS_QTYPE_TXT, dowyja, 0)==-1){
+                        failed=3; goto establishConnectionDNServer;
+                   };
+              } else {
+                   if(debugMode) cout << "[WARNING] Network connection failed (DNS: " << nsVec[selectedDns].c_str() << ")" << endl;
+                   selectedDns++; failed=3;
+                   goto establishConnectionDNServer;
+              }
+              tries=0;
+           } else {
+                 mydict.ignore(1024, mydict.widen('\n'));
+           }
+       }
+   } else {
+       if(debugMode) cout << "\nERROR: Can not open dictionary file :( \n\n" << endl;
+   }
+   mydict.close();
+   outputDns_mutex.lock();
+   outputDns[consthread] = dowyja;
+   outputDns_mutex.unlock();
+   return 0;
 }
 
 
 int convertIPtoHostname(const char *ip, std::string &outPutHost){
 
-    outPutHost.clear();
-    char reversed_ip[INET_ADDRSTRLEN+1];
-    char *query;
-    int query_len, fd = -1, i = 0, nfds, selectedDnsTmp, tries=0, level=0;
-    struct dnshdr *dnsh;
-    struct sockaddr_in addr = {0};
-    struct dns_question *dnst;
-    struct timeval timeo;
-    unsigned int selectedDns=0;
-    uint16_t dns_id;
-    fd_set fdset;
-    string linex;
-    char failed=0;
-    char *qname=NULL;
-    string dowyja;
+   outPutHost.clear();
+   char reversed_ip[INET_ADDRSTRLEN+1];
+   char *query;
+   int query_len, fd = -1, i = 0, nfds, selectedDnsTmp, tries=0, level=0;
+   struct dnshdr *dnsh;
+   struct sockaddr_in addr = {0};
+   struct dns_question *dnst;
+   struct timeval timeo;
+   unsigned int selectedDns=0;
+   uint16_t dns_id;
+   fd_set fdset;
+   string linex;
+   char failed=0;
+   char *qname=NULL;
+   string dowyja;
 
-    memset(reversed_ip, '\0', INET_ADDRSTRLEN+1);
+   memset(reversed_ip, '\0', INET_ADDRSTRLEN+1);
 
-    in_addr_t addrev;
-    inet_pton(AF_INET, ip, &addrev);
-    addrev = ((addrev & 0xff000000) >> 24) | ((addrev & 0x00ff0000) >>  8) | ((addrev & 0x0000ff00) <<  8) | ((addrev & 0x000000ff) << 24);
+   in_addr_t addrev;
+   inet_pton(AF_INET, ip, &addrev);
+   addrev = ((addrev & 0xff000000) >> 24) | ((addrev & 0x00ff0000) >>  8) | ((addrev & 0x0000ff00) <<  8) | ((addrev & 0x000000ff) << 24);
 
-    inet_ntop(AF_INET, &addrev, reversed_ip, sizeof(reversed_ip));
+   inet_ntop(AF_INET, &addrev, reversed_ip, sizeof(reversed_ip));
 
-    string spfCheckString=reversed_ip;
+   string spfCheckString=reversed_ip;
 
-    std::string::const_iterator start = spfCheckString.begin() ;
+   std::string::const_iterator start = spfCheckString.begin() ;
 
-    query=(char*)malloc(DNS_QUERY_SIZE);
+   query=(char*)malloc(DNS_QUERY_SIZE);
 
-    timeo.tv_sec = 1;
-    timeo.tv_usec = 0;
+   timeo.tv_sec = 1;
+   timeo.tv_usec = 0;
 
-    spfCheckString += ".in-addr.arpa";
+   spfCheckString += ".in-addr.arpa";
 
-    establishConnectionDNServerHost:
-    if(selectedDns>=nsVec.size()){
-        selectedDnsTmp=selectedDns/nsVec.size();
-        selectedDns=selectedDns-(selectedDnsTmp*(nsVec.size()));
-    }
+   establishConnectionDNServerHost:
+   if(selectedDns>=nsVec.size()){
+       selectedDnsTmp=selectedDns/nsVec.size();
+       selectedDns=selectedDns-(selectedDnsTmp*(nsVec.size()));
+   }
 
-    if( resolveCount <= tries++ ){
-        if(debugMode)
-            cout << "[WARNING] Couldn't check the PTR " << spfCheckString << " Limit reached" << endl;
-            failed=0; tries=1;
-    }
+   if( resolveCount <= tries++ ){
+       if(debugMode)
+           cout << "[WARNING] Couldn't check the PTR " << spfCheckString << " Limit reached" << endl;
+           failed=0; tries=1;
+   }
 
-    if(connectToDnsServer(&fd, &selectedDns, addr, nsVec[selectedDns].c_str()) == -1){
-         if(debugMode) cout << "[WARNING] Spf check failed during creating socket (DNS: " << nsVec[selectedDns].c_str() << ")" << endl;
-             tries=0;
-             goto establishConnectionDNServerHost;
+   if(connectToDnsServer(&fd, &selectedDns, addr, nsVec[selectedDns].c_str()) == -1){
+        if(debugMode) cout << "[WARNING] Spf check failed during creating socket (DNS: " << nsVec[selectedDns].c_str() << ")" << endl;
+            tries=0;
+            goto establishConnectionDNServerHost;
+        }
+
+        memset(query,'\0',DNS_QUERY_SIZE);
+        createPacket(dnsh, query, qname, &query_len, spfCheckString.c_str(), &dns_id, dnst, PROTO_DNS_QTYPE_PTR);
+
+        if(sendPacket(&fd, query, &query_len, &selectedDns, &fdset, timeo, &nfds)==-1){
+            failed=1; goto establishConnectionDNServerHost;
+        };
+
+        if (FD_ISSET(fd, &fdset)){
+            if(readPacket(&fd, qname, &selectedDns, dnst, dnsh, &dns_id, linex.c_str(), PROTO_DNS_QTYPE_PTR, dowyja, level)==-1){
+               failed=1; goto establishConnectionDNServerHost;
+            };
+        } else {
+            if(fd != -1)
+               close(fd);
+
+            if(debugMode) cout << "[WARNING] PTR network connection failed (DNS: " << nsVec[selectedDns].c_str() << ") for " << spfCheckString << endl;
+               selectedDns++; failed=1;  fd = -1; FD_ZERO(&fdset);
          }
+         tries=0;
 
-         memset(query,'\0',DNS_QUERY_SIZE);
-         createPacket(dnsh, query, qname, &query_len, spfCheckString.c_str(), &dns_id, dnst, PROTO_DNS_QTYPE_PTR);
+        if(fd != -1)
+               close(fd);
+        free(query);
 
-         if(sendPacket(&fd, query, &query_len, &selectedDns, &fdset, timeo, &nfds)==-1){
-             failed=1; goto establishConnectionDNServerHost;
-         };
-
-         if (FD_ISSET(fd, &fdset)){
-             if(readPacket(&fd, qname, &selectedDns, dnst, dnsh, &dns_id, linex.c_str(), PROTO_DNS_QTYPE_PTR, dowyja, level)==-1){
-                failed=1; goto establishConnectionDNServerHost;
-             };
-         } else {
-             if(fd != -1)
-                close(fd);
-
-             if(debugMode) cout << "[WARNING] PTR network connection failed (DNS: " << nsVec[selectedDns].c_str() << ") for " << spfCheckString << endl;
-                selectedDns++; failed=1;  fd = -1; FD_ZERO(&fdset);
-          }
-          tries=0;
-
-         if(fd != -1)
-                close(fd);
-         free(query);
-
-         if(dowyja.length()){
-                outPutHost=dowyja;
-                return 0;
-          }
-          else return 1;
+        if(dowyja.length()){
+               outPutHost=dowyja;
+               return 0;
+         }
+         else return 1;
 }
 
 const char *convertIptoName(const char *ip) {
-    string outme;
-    convertIPtoHostname(ip, outme);
-    return outme.c_str();
+   string outme;
+   convertIPtoHostname(ip, outme);
+   return outme.c_str();
 }
 
 void *dziecko(void *arg) {
-    const int param=(int)((long)arg);
-    startCore(param);
-    return 0;
+   const int param=(int)((long)arg);
+   startCore(param);
+   return 0;
 }
 
 void *scanSpfMultiThread(void *arg)
 {
-    const int port=(int)((long)arg);
+   const int port=(int)((long)arg);
 
-    if (port_is_open(ipToSpf, port)) {
-        scanSpfResults_mutex.lock();
-        scanSpfResults[ipToSpf]=port;
-        scanSpfResults_mutex.unlock();
-    }
+   if (port_is_open(ipToSpf, port)) {
+       scanSpfResults_mutex.lock();
+       scanSpfResults[ipToSpf]=port;
+       scanSpfResults_mutex.unlock();
+   }
 
-    return 0;
+   return 0;
 }
 
 
 void help(char *prog)
 {
-      cout << " Use:" << endl;
-      cout << " -d host - Domain name" << endl;
-      cout << " -f file - Dictionary file path" << endl;
-      cout << " -n file - Path to resolv file where are DNS servers" << endl;
-      cout << " -o dir  - Directory path" << endl;
-      cout << " -t int  - Number of threads (Default 1)" << endl;
-      cout << " -c int  - Number of resolves for a name before giving up (Default 1024)" << endl;
-      cout << " -a      - Check A type records (Default A, CNAME, TXT, MX)" << endl;
-      cout << " -b      - Check AAAA type records (Default A, CNAME, TXT, MX)" << endl;
-      cout << " -s      - Scan ports of A records (Default most popular)" << endl;
-      cout << " -r      - Scan ports of SPF records (Default most popular)" << endl;
-      cout << " -e int  - Number of threads for SPF port scanning (Default 50)" << endl;
-      cout << " -p      - Specific port to scan (e.g. 22,80,443)" << endl;
-      cout << " -i      - Timeout fo port  port scanning in milliseconds (Default 1000ms)" << endl;
-      cout << " -m      - Audit SPF records" << endl;
-      cout << " -g      - Check host by name enable" << endl;
-      cout << " -v      - Verbose mode" << endl;
-      cout << " -h      - Show help info\n" << endl;
-      cout << " example: " << prog << " -f dictionaries/hackdns.txt -n servers/cloudflare.conf -o ./results/ -d domain.com -t 64\n" << endl;
+     cout << " Use:" << endl;
+     cout << " -d host - Domain name" << endl;
+     cout << " -f file - Dictionary file path" << endl;
+     cout << " -n file - Path to resolv file where are DNS servers" << endl;
+     cout << " -o dir  - Directory path" << endl;
+     cout << " -t int  - Number of threads (Default 1)" << endl;
+     cout << " -c int  - Number of resolves for a name before giving up (Default 1024)" << endl;
+     cout << " -a      - Check A type records (Default A, CNAME, TXT, MX)" << endl;
+     cout << " -b      - Check AAAA type records (Default A, CNAME, TXT, MX)" << endl;
+     cout << " -s      - Scan ports of A records (EXPERIMENTAL)" << endl;
+     cout << " -r      - Scan ports of SPF records (EXPERIMENTAL)" << endl;
+     cout << " -e int  - Number of threads for SPF port scanning (Default 50)" << endl;
+     cout << " -p      - Specific port to scan (e.g. 22,80,443)" << endl;
+     cout << " -i      - Timeout for port scanning in milliseconds (Default 1000ms)" << endl;
+     cout << " -m      - Audit SPF records" << endl;
+     cout << " -g      - Check host by name enable" << endl;
+     cout << " -v      - Verbose mode" << endl;
+     cout << " -h      - Show help info\n" << endl;
+     cout << " example: " << prog << " -f dictionaries/hackdns.txt -n servers/cloudflare.conf -o ./results/ -d domain.com -t 64\n" << endl;
 }
 
 
 int main( int argc , char *argv[])
 {
-      int opt, idx, errorcode=0;
-      unsigned int tmpPort, countPortScans=0;
-;
-      string hotOutputGethost, tmpResultMatch, nsentry;
-      uint32_t ipaddress, subnetmask, netMask, ip;
-      struct in_addr x;
-      char * pch;
+     int opt, idx, errorcode=0;
+     unsigned int tmpPort, countPortScans=0;
 
-      cout << "\n==========================================\n hackDNS 0.2 - Fast DNS recon for hackers \n==========================================\n" << endl;
+     string hotOutputGethost, tmpResultMatch, nsentry;
+     uint32_t ipaddress, subnetmask, netMask, ip;
+     struct in_addr x;
+     char * pch;
 
-      while((opt = getopt(argc, argv, "d:n:f:o:t:e:c:p:i:abmgsrvh")) != -1) {
-             switch(opt){
-             case 'd' :
-                 hostname = optarg;
-                 break;
-             case 'n' :
-                 nsfile = optarg;
-                 break;
-             case 'f' :
-                 dictionary = optarg;
-                 break;
-             case 'o' :
-                 resultFile = optarg;
-                 break;
-             case 't' :
-                 threats = atoi(optarg);
-                 break;
-             case 'e' :
-                 spfScanProcesses = atoi(optarg);
-                 break;
-             case 'c' :
-                 resolveCount = atoi(optarg);
-                 break;
-             case 'a' :
-                 atype=1;
-                 break;
-             case 'g' :
-                 checkHostByName = 1;
-                 break;
-             case 'm' :
-                 spfScan= 1;
-                 break;
-             case 'r' :
-                 spfScan = 1;
-                 spfPorts = 1;
-                 break;
-             case 'b' :
-                 atype = 2;
-                 break;
-             case 's' :
-                 scanPorts = 1;
-                 break;
-             case 'p' :
-                 skanThisPorts.clear();
-                 pch = strtok (optarg,",");
-                 while (pch != NULL)
-                 {
-                   tmpPort=atoi(pch);
-                   pch = strtok (NULL, ",");
-                   if(65535<tmpPort || ( skanThisPorts.size() !=0 && std::find(skanThisPorts.begin(), skanThisPorts.end(),tmpPort)!=skanThisPorts.end()))
-                   {
-                       continue;
-                   }
-                   skanThisPorts.push_back(tmpPort);
-                 }
-                 break;
-             case 'i' :
-                 msTimeout=atoi(optarg);
-                 if(3600000<msTimeout || msTimeout<1) msTimeout=1000;
-                 break;
-             case 'v' :
-                 debugMode = 1;
-                 break;
-             case 'h' :
-                 help(argv[0]);
-                 return 0;
-                 break;
-             }
-      }
+     cout << "\n==========================================\n hackDNS 0.2 - Fast DNS recon for hackers \n==========================================\n" << endl;
 
-      if(!hostname.length()){
-         help(argv[0]);
-         cout << "ERROR: Hostname not defined.\n" << endl;
-         return -1;
-      }
-
-      if(resultFile.length()!=0){
-         resultFile += hostname + "." + to_string((int)time(NULL)) + ".txt";
-      }
-
-      if(!dictionary.length()){
-         dictionary = "./dictionary/jhaddix.;xt";
-      }
-
-      ifstream mydict (dictionary);
-      if(!mydict){ cout << "\nCRITICAL: Wrong path to dictionary file\n" << endl; return -1; }
-      while(mydict.ignore(1024, mydict.widen('\n'))) lines++;
-      mydict.close();
-
-      podzielone=lines/threats;
-
-      ifstream myns2 (nsfile);
-      if(!myns2){ cout << "\nCRITICAL: Wrong path to resolver file\n" << endl; return -1; }
-      while(getline (myns2,nsentry)){
-            nsVec.push_back(nsentry.c_str());
-      }
-      myns2.close();
-
-      pthread_t thread_id[threats];
-      pthread_t thread_spf[spfScanProcesses];
-
-      for(idx=0; idx < threats; idx++)
-      {
-          if((errorcode=pthread_create( &thread_id[idx], NULL, dziecko, (void *)(uintptr_tcust)(idx)))!=0){
-             cout << "ERROR: Can't create thread " << idx << ". Scan will be incomplete. Use lower value or try optimize your OS. Error code: " << errorcode << endl;
-             sleep(5);
-             threats=idx;
-             break;
-         };
-      }
-
-      for(idx=0; idx < threats; idx++)
-      {
-             pthread_join( thread_id[idx], NULL);
-      }
-
-      std::ofstream outfile;
-      if(resultFile.length()!=0){
-             outfile.open(resultFile.c_str());
-      }
-
-      outputDns_mutex.lock();
-      for (const auto &pair : outputDns){
-             if(0<pair.second.length())
-                   outfile << pair.second;
-      }
-      outputDns_mutex.unlock();
-
-      if(scanPorts){
-            if(outfile.is_open()) outfile << "\n=== PORT SCAN RESULT ==================================\n" << endl;
-            cout << "\n=== PORT SCAN RESULT ==================================\n" << endl;
-
-            scanResults_mutex.lock();
-            for (const auto &pair : scanResults) {
-                  cout << "===> Scanned " << pair.first <<  " (revdns " << convertIptoName(pair.first.c_str()) << ")\n";
-                  if(outfile.is_open())  outfile << "===> Scanned " << pair.first <<  " (revdns " << convertIptoName(pair.first.c_str()) << ")\n";
-                  for (const auto &pair2 : pair.second) {
-
-                       if(pair2.second == 1){
-                          if(outfile.is_open())  outfile << "Found open port: " << pair.first << ":" << pair2.first << endl;
-                          cout << "Found open port: " << pair.first << ":" << pair2.first << endl;
-                       }
+     while((opt = getopt(argc, argv, "d:n:f:o:t:e:c:p:i:abmgsrvh")) != -1) {
+            switch(opt){
+            case 'd' :
+                hostname = optarg;
+                break;
+            case 'n' :
+                nsfile = optarg;
+                break;
+            case 'f' :
+                dictionary = optarg;
+                break;
+            case 'o' :
+                resultFile = optarg;
+                break;
+            case 't' :
+                threats = atoi(optarg);
+                break;
+            case 'e' :
+                spfScanProcesses = atoi(optarg);
+                break;
+            case 'c' :
+                resolveCount = atoi(optarg);
+                break;
+            case 'a' :
+                atype=1;
+                break;
+            case 'g' :
+                checkHostByName = 1;
+                break;
+            case 'm' :
+                spfScan= 1;
+                break;
+            case 'r' :
+                spfScan = 1;
+                spfPorts = 1;
+                break;
+            case 'b' :
+                atype = 2;
+                break;
+            case 's' :
+                scanPorts = 1;
+                break;
+            case 'p' :
+                skanThisPorts.clear();
+                pch = strtok (optarg,",");
+                while (pch != NULL)
+                {
+                  tmpPort=atoi(pch);
+                  pch = strtok (NULL, ",");
+                  if(65535<tmpPort || ( skanThisPorts.size() !=0 && std::find(skanThisPorts.begin(), skanThisPorts.end(),tmpPort)!=skanThisPorts.end()))
+                  {
+                      continue;
                   }
+                  skanThisPorts.push_back(tmpPort);
+                }
+                break;
+            case 'i' :
+                msTimeout=atoi(optarg);
+                if(3600000<msTimeout || msTimeout<1) msTimeout=1000;
+                break;
+            case 'v' :
+                debugMode = 1;
+                break;
+            case 'h' :
+                help(argv[0]);
+                return 0;
+                break;
             }
-            scanResults_mutex.unlock();
-      }
+     }
 
-      if(checkHostByName || spfPorts){
-          if(outfile.is_open()) outfile << "\n\n=============== SPF RECORD AUDIT ===============\n\n";
-          cout << "\n\n=============== SPF RECORD AUDIT ===============\n\n";
-          outputSpf_mutex.lock();
-      }
+     if(!hostname.length()){
+        help(argv[0]);
+        cout << "ERROR: Hostname not defined.\n" << endl;
+        return -1;
+     }
 
-      if(!outputSpf.empty()){
-          for (const auto &pair : outputSpf) {
-              if(outfile.is_open()) outfile << pair.first << " ";
-              cout << pair.first << " ";
-              if(MAX_SPF_LEVEL_RECURSION<=pair.second){
-                if(outfile.is_open()) outfile << "(POSSIBLE RECURSION) ";
-                cout << "(POSSIBLE RECURSION)";
-              }
-              if(outfile.is_open()) outfile << endl;
-              cout << endl;
-          }
+     if(resultFile.length()!=0){
+        resultFile += hostname + "." + to_string((int)time(NULL)) + ".txt";
+     }
 
-          for (const auto &pair : outputSpf) {
-              regex ipV4template( "(\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})" ) ;
-              match_results<std::string::const_iterator> resultIps;
-              std::string start = pair.first;
+     if(!dictionary.length()){
+        dictionary = "./dictionary/jhaddix.;xt";
+     }
 
-              // IP check
-              regex_search(start, resultIps, ipV4template);
+     ifstream mydict (dictionary);
+     if(!mydict){ cout << "\nCRITICAL: Wrong path to dictionary file\n" << endl; return -1; }
+     while(mydict.ignore(1024, mydict.widen('\n'))) lines++;
+     mydict.close();
 
-              if(resultIps[1].length()){
-                    tmpResultMatch=resultIps[1];
+     podzielone=lines/threats;
 
-                    regex ipMask( "\\/(\\d{1,3})" ) ;
-                    match_results<std::string::const_iterator> resultMask;
-                    std::string mask = pair.first;
+     ifstream myns2 (nsfile);
+     if(!myns2){ cout << "\nCRITICAL: Wrong path to resolver file\n" << endl; return -1; }
+     while(getline (myns2,nsentry)){
+           nsVec.push_back(nsentry.c_str());
+     }
+     myns2.close();
 
-                    regex_search(mask, resultMask, ipMask);
+     pthread_t thread_id[threats];
+     pthread_t thread_spf[spfScanProcesses];
 
-                    if(resultMask[1].length()){
-                        netMask = (0xFFFFFFFF << (32 - stoi(resultMask[1].str())) & 0xFFFFFFFF);
-                        ipaddress = ntohl(inet_addr(tmpResultMatch.c_str()));
-                        subnetmask = netMask;
+     for(idx=0; idx < threats; idx++)
+     {
+         if((errorcode=pthread_create( &thread_id[idx], NULL, dziecko, (void *)(uintptr_tcust)(idx)))!=0){
+            cout << "ERROR: Can't create thread " << idx << ". Scan will be incomplete. Use lower value or try optimize your OS. Error code: " << errorcode << endl;
+            sleep(5);
+            threats=idx;
+            break;
+        };
+     };
 
-                        for( uint32_t i = 0; i < (~subnetmask) || ( i==0 && (~subnetmask) == 0); i++ ){
-                            ip = (ipaddress & subnetmask) | i;
-                            x = { htonl(ip) };
+     for(idx=0; idx < threats; idx++)
+     {
+            pthread_join( thread_id[idx], NULL);
+     }
 
-                            if(checkHostByName){
-                                if(convertIPtoHostname(inet_ntoa(x), hotOutputGethost)==0){
-                                    if(outfile.is_open()) outfile << hotOutputGethost;
-                                    cout << hotOutputGethost;
-                                };
-                            }
+     std::ofstream outfile;
+     if(resultFile.length()!=0){
+            outfile.open(resultFile.c_str());
+     }
 
-                            ipToSpf = inet_ntoa(x);
+     outputDns_mutex.lock();
+     for (const auto &pair : outputDns){
+            if(0<pair.second.length())
+                  outfile << pair.second;
+     }
+     outputDns_mutex.unlock();
 
-                            for (auto it = skanThisPorts.begin(); it != skanThisPorts.end(); it++) {
-                                if(spfScanProcesses <= countPortScans) {
-                                    for(idx=0; idx < countPortScans; idx++){
-                                        pthread_join( thread_spf[idx], NULL);
-                                    }
+     if(scanPorts){
+           if(outfile.is_open()) outfile << "\n=== PORT SCAN RESULT ==================================\n" << endl;
+           cout << "\n=== PORT SCAN RESULT ==================================\n" << endl;
 
-                                    countPortScans=0;
-                                }
-                                if((errorcode=pthread_create( &thread_spf[countPortScans++], NULL, scanSpfMultiThread, (void *)(uintptr_tcust)(*it)))!=0){
-                                    cout << "ERROR: Can't create new thread. Code " << errorcode << endl;
-                                    sleep(5);
-                                    break;
-                                };
-                            }
+           scanResults_mutex.lock();
+           for (const auto &pair : scanResults) {
+                 cout << "===> Scanned " << pair.first <<  " (revdns " << convertIptoName(pair.first.c_str()) << ")\n";
+                 if(outfile.is_open())  outfile << "===> Scanned " << pair.first <<  " (revdns " << convertIptoName(pair.first.c_str()) << ")\n";
+                 for (const auto &pair2 : pair.second) {
 
-                            for(idx=0; idx < countPortScans; idx++){
-                                pthread_join( thread_spf[idx], NULL);
-                                countPortScans=0;
-                            }
+                      if(pair2.second == 1){
+                         if(outfile.is_open())  outfile << "Found open port: " << pair.first << ":" << pair2.first << endl;
+                         cout << "Found open port: " << pair.first << ":" << pair2.first << endl;
+                      }
+                 }
+           }
+           scanResults_mutex.unlock();
+     }
 
-                            scanSpfResults_mutex.lock();
-                            for (const auto &pair : scanSpfResults){
-                                    cout << ">>> Port " << pair.first << ":" << pair.second << " open." << endl;
-                                    if(outfile.is_open()) outfile << ">>> Port " << pair.first << ":" << pair.second << " open." << endl;
-                            }
-                            scanSpfResults_mutex.unlock();
-                            scanSpfResults.clear();
-                        }
-                    } else {
-                        if(checkHostByName){
-                            if(convertIPtoHostname(tmpResultMatch.c_str(), hotOutputGethost)==0){
-                                cout << hotOutputGethost;
-                            }
-                        }
-                    }
-              }
-          }
-          outputSpf_mutex.unlock();
-      } else if(checkHostByName){
-          if(outfile.is_open()) outfile << "\n !!! NO SPF RECORD FOUND !!!\n\n";
-          cout << "\n !!! NO SPF RECORD FOUND !!!\n\n";
-      }
+     if(checkHostByName || spfScan){
+         if(outfile.is_open()) outfile << "\n\n=============== SPF RECORD AUDIT ===============\n\n";
+         cout << "\n\n=============== SPF RECORD AUDIT ===============\n\n";
+         outputSpf_mutex.lock();
+     }
 
-      if(resultFile.length()!=0){
-          outfile.close();
-      }
+     if(!outputSpf.empty()){
 
-      return 0;
+         for (const auto &pair : outputSpf) {
+             if(outfile.is_open()) outfile << pair.first << " ";
+             cout << pair.first << " ";
+             if(MAX_SPF_LEVEL_RECURSION<=pair.second){
+               if(outfile.is_open()) outfile << "(POSSIBLE RECURSION) ";
+               cout << "(POSSIBLE RECURSION)";
+             }
+             if(outfile.is_open()) outfile << endl;
+             cout << endl;
+         }
+
+         if(checkHostByName || spfPorts)
+         for (const auto &pair : outputSpf) {
+             regex ipV4template( "(\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})" ) ;
+             match_results<std::string::const_iterator> resultIps;
+             std::string start = pair.first;
+
+             // IP check
+             regex_search(start, resultIps, ipV4template);
+
+             if(resultIps[1].length()){
+                   tmpResultMatch=resultIps[1];
+
+                   regex ipMask( "\\/(\\d{1,3})" ) ;
+                   match_results<std::string::const_iterator> resultMask;
+                   std::string mask = pair.first;
+
+                   regex_search(mask, resultMask, ipMask);
+
+                   if(resultMask[1].length()){
+                       netMask = (0xFFFFFFFF << (32 - stoi(resultMask[1].str())) & 0xFFFFFFFF);
+                       ipaddress = ntohl(inet_addr(tmpResultMatch.c_str()));
+                       subnetmask = netMask;
+
+                       for( uint32_t i = 0; i < (~subnetmask) || ( i==0 && (~subnetmask) == 0); i++ ){
+                           ip = (ipaddress & subnetmask) | i;
+                           x = { htonl(ip) };
+
+                           if(checkHostByName){
+                               if(convertIPtoHostname(inet_ntoa(x), hotOutputGethost)==0){
+                                   if(outfile.is_open()) outfile << hotOutputGethost;
+                                   cout << hotOutputGethost;
+                               };
+                           }
+
+                           ipToSpf = inet_ntoa(x);
+
+                           for (auto it = skanThisPorts.begin(); it != skanThisPorts.end(); it++) {
+                               if(spfScanProcesses <= countPortScans) {
+                                   for(idx=0; idx < countPortScans; idx++){
+                                       pthread_join( thread_spf[idx], NULL);
+                                   }
+
+                                   countPortScans=0;
+                               }
+                               if((errorcode=pthread_create( &thread_spf[countPortScans++], NULL, scanSpfMultiThread, (void *)(uintptr_tcust)(*it)))!=0){
+                                   cout << "ERROR: Can't create new thread. Code " << errorcode << endl;
+                                   sleep(5);
+                                   break;
+                               };
+                           }
+
+                           for(idx=0; idx < countPortScans; idx++){
+                               pthread_join( thread_spf[idx], NULL);
+                               countPortScans=0;
+                           }
+
+                           scanSpfResults_mutex.lock();
+                           for (const auto &pair : scanSpfResults){
+                                   cout << ">>> Port " << pair.first << ":" << pair.second << " open." << endl;
+                                   if(outfile.is_open()) outfile << ">>> Port " << pair.first << ":" << pair.second << " open." << endl;
+                           }
+                           scanSpfResults_mutex.unlock();
+                           scanSpfResults.clear();
+                       }
+                   } else {
+                       if(checkHostByName){
+                           if(convertIPtoHostname(tmpResultMatch.c_str(), hotOutputGethost)==0){
+                               cout << hotOutputGethost;
+                           }
+                       }
+                   }
+             }
+         }
+         outputSpf_mutex.unlock();
+     } else if(checkHostByName){
+         if(outfile.is_open()) outfile << "\n !!! NO SPF RECORD FOUND !!!\n\n";
+         cout << "\n !!! NO SPF RECORD FOUND !!!\n\n";
+     }
+
+     if(resultFile.length()!=0){
+         outfile.close();
+     }
+
+     return 0;
 }
 
