@@ -98,7 +98,7 @@ std::mutex scanSpfResults_mutex;
 ///////////////////////////////////////////////////////////////////////////
 
 static uint32_t threats=1, atype=0, debugMode=0, lines=0, podzielone=0, resolveCount=1024, scanPorts=0, msTimeout=1000;
-static uint32_t spfScan=0, spfPorts=0, checkHostByName=0, spfScanProcesses=50;
+static uint32_t spfScan=0, spfPorts=0, checkHostByName=0, spfScanProcesses=1;
 static uint32_t x, y, z, w;
 static string hostname, nsfile, dictionary, resultFile;
 static char *ipToSpf;
@@ -856,7 +856,7 @@ void help(char *prog)
      cout << " -b      - Check AAAA type records (Default A, CNAME, TXT, MX)" << endl;
      cout << " -s      - Scan ports of A records (EXPERIMENTAL)" << endl;
      cout << " -r      - Scan ports of SPF records (EXPERIMENTAL)" << endl;
-     cout << " -e int  - Number of threads for SPF port scanning (Default 50)" << endl;
+     cout << " -e int  - Number of threads for SPF port scanning (Default 1)" << endl;
      cout << " -p      - Specific port to scan (e.g. 22,80,443)" << endl;
      cout << " -i      - Timeout for port scanning in milliseconds (Default 1000ms)" << endl;
      cout << " -m      - Audit SPF records" << endl;

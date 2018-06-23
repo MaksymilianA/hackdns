@@ -24,7 +24,7 @@ Clone the git repository and run `make` command for gcc or `make CC=clang++` for
  -b      - Check AAAA type records (Default A, CNAME, TXT, MX)
  -s      - Scan ports of A records (EXPERIMENTAL)
  -r      - Scan ports of SPF records (EXPERIMENTAL)
- -e int  - Number of threads for SPF port scanning (Default 50)
+ -e int  - Number of threads for SPF port scanning (Default 1)
  -p      - Specific port to scan (e.g. 22,80,443)
  -i      - Timeout for port scanning in milliseconds (Default 1000ms)
  -m      - Audit SPF records
